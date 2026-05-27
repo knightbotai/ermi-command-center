@@ -1,3 +1,7 @@
+param(
+    [switch]$LaunchAfterInstall
+)
+
 $ErrorActionPreference = "Stop"
 
 $InstallDir = Split-Path -Parent $PSScriptRoot
@@ -119,6 +123,9 @@ try {
     Write-Step "Preparing archive directories"
     & $python -m ermi --root archive init
 
+    Write-Step "Running health diagnostics"
+    & $python -m ermi --root archive diagnostics
+
     Write-Step "Creating desktop shortcuts"
     New-Shortcut `
         -Path $AppShortcut `
@@ -146,3 +153,8 @@ Write-Host ""
 Write-Host "Launch ERMI from the desktop shortcut, or run:"
 Write-Host "  npm run api"
 Write-Host "  npm run dev:ui"
+
+if ($LaunchAfterInstall) {
+    Write-Step "Launching ERMI Command Center"
+    & "$InstallDir\install\Launch-ERMI.ps1"
+}

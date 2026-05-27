@@ -4,6 +4,14 @@ ERMI Command Center is ready for local MVP use.
 
 ## Install
 
+Fastest path after cloning:
+
+```text
+START-HERE.cmd
+```
+
+Manual installer path:
+
 Double-click:
 
 ```text

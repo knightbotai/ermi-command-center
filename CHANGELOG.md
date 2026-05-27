@@ -6,6 +6,8 @@ All notable changes to ERMI Command Center will be documented here.
 
 ### Added
 
+- Root-level `START-HERE.cmd` for one-click post-clone setup, diagnostics, shortcut creation, launch, and browser open.
+- DeeTorch post-clone setup guide with one-click usage and optional GitHub remote handoff notes.
 - MVP handoff guide with install, setup, sample-data, daily-use, update, and recovery notes.
 - Sample ChatGPT and ChatLasso data for smoke testing without personal exports.
 - Actionable diagnostic fix hints in API and command-center health checks.

@@ -12,6 +12,16 @@ Canonical project aliases live in [docs/ALIASES.md](docs/ALIASES.md).
 
 ## Quick Start
 
+After cloning on Windows, double-click:
+
+```text
+START-HERE.cmd
+```
+
+That runs the one-click installer, diagnostics, desktop shortcut setup, and app launch.
+
+Manual CLI flow:
+
 ```powershell
 python -m ermi init
 python -m ermi setup --chatgpt-source C:\path\to\conversations.json --chatlasso-source C:\path\to\Obsidian\10_Data_Harvest\11_SSI_Raw --run
@@ -75,7 +85,7 @@ npm run api
 npm run dev:ui
 ```
 
-See [docs/MVP_HANDOFF.md](docs/MVP_HANDOFF.md), [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md), [docs/INSTALLER.md](docs/INSTALLER.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), and [CHANGELOG.md](CHANGELOG.md) for ongoing project notes.
+See [docs/MVP_HANDOFF.md](docs/MVP_HANDOFF.md), [docs/DEE_TORCH_POST_CLONE.md](docs/DEE_TORCH_POST_CLONE.md), [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md), [docs/INSTALLER.md](docs/INSTALLER.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), and [CHANGELOG.md](CHANGELOG.md) for ongoing project notes.
 
 See [docs/CHATLASSO_INTEGRATION.md](docs/CHATLASSO_INTEGRATION.md) for the joined ChatLasso -> ERMI workflow.
 
