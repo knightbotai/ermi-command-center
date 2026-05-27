@@ -10,6 +10,8 @@ All notable changes to ERMI Command Center will be documented here.
 - Installer branding assets and generated bitmap/icon pipeline.
 - Optional code-signing build script lane for `.pfx` certificates and `signtool.exe`.
 - Certificate-store thumbprint signing support for Windows code-signing certificates.
+- Internal dev self-signing mode with public certificate export for controlled test machines.
+- SHA-256 checksum generation for installer release artifacts.
 - Signed Windows installer walkthrough documentation.
 - Root-level `START-HERE.cmd` for one-click post-clone setup, diagnostics, shortcut creation, launch, and browser open.
 - DeeTorch post-clone setup guide with one-click usage and optional GitHub remote handoff notes.

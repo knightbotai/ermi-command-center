@@ -29,6 +29,12 @@ Optional signing requirements:
 - Windows SDK signing tools, specifically `signtool.exe`.
 - A timestamp server such as `http://timestamp.digicert.com`.
 
+Install Windows SDK signing tools when you want `-Sign` or `-DevSelfSign`:
+
+```powershell
+winget install --id Microsoft.WindowsSDK --exact
+```
+
 ## Build Unsigned Installer
 
 From the repo root:
@@ -71,6 +77,45 @@ Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert
 ```
 
 The script compiles the installer first, then signs the final `.exe` with SHA-256 and a timestamp.
+
+## Build Internal Dev-Signed Installer
+
+For private testing on machines you control:
+
+```powershell
+.\install\Build-WindowsInstaller.ps1 -DevSelfSign
+```
+
+This creates or reuses a local development code-signing certificate:
+
+```text
+CN=ERMI Command Center Dev Signing
+```
+
+It signs the installer and exports the public certificate beside the installer:
+
+```text
+installer\output\ERMI-Dev-Signing-Certificate.cer
+```
+
+To trust that dev-signed installer on one of your own machines, import the `.cer` into:
+
+```text
+Trusted Root Certification Authorities
+Trusted Publishers
+```
+
+Only do this on machines you control. This is useful for rehearsing the signed-installer workflow; it is not public distribution trust.
+
+## Checksums
+
+Every installer build writes:
+
+```text
+installer\output\ERMI-Command-Center-Setup-0.1.0-mvp.exe.sha256.txt
+```
+
+Publish that checksum beside release installers so users can verify the downloaded file.
 
 ## Recommended Release Flow
 

@@ -2,9 +2,11 @@ param(
     [string]$AppVersion = "0.1.0-mvp",
     [switch]$InstallTooling,
     [switch]$Sign,
+    [switch]$DevSelfSign,
     [string]$CertificatePath = "",
     [string]$CertificatePassword = "",
     [string]$CertificateThumbprint = "",
+    [string]$DevCertificateSubject = "CN=ERMI Command Center Dev Signing",
     [string]$TimestampUrl = "http://timestamp.digicert.com",
     [switch]$CheckOnly
 )
@@ -58,6 +60,50 @@ function Find-SignTool {
         }
     }
     return $null
+}
+
+function Get-OrCreateDevCertificate {
+    param([string]$Subject)
+
+    $cert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert |
+        Where-Object { $_.Subject -eq $Subject } |
+        Sort-Object NotAfter -Descending |
+        Select-Object -First 1
+
+    if ($null -ne $cert) {
+        return $cert
+    }
+
+    Write-Step "Creating internal development signing certificate"
+    return New-SelfSignedCertificate `
+        -Type CodeSigningCert `
+        -Subject $Subject `
+        -CertStoreLocation Cert:\CurrentUser\My `
+        -KeyAlgorithm RSA `
+        -KeyLength 3072 `
+        -HashAlgorithm SHA256 `
+        -KeyExportPolicy Exportable `
+        -NotAfter (Get-Date).AddYears(2)
+}
+
+function Export-DevCertificate {
+    param(
+        [System.Security.Cryptography.X509Certificates.X509Certificate2]$Certificate,
+        [string]$OutputDirectory
+    )
+
+    $certPath = Join-Path $OutputDirectory "ERMI-Dev-Signing-Certificate.cer"
+    Export-Certificate -Cert $Certificate -FilePath $certPath | Out-Null
+    return $certPath
+}
+
+function Write-InstallerChecksum {
+    param([string]$Installer)
+
+    $hash = Get-FileHash -Algorithm SHA256 -Path $Installer
+    $checksumPath = "$Installer.sha256.txt"
+    "$($hash.Hash)  $(Split-Path -Leaf $Installer)" | Set-Content -Path $checksumPath -Encoding ASCII
+    return $checksumPath
 }
 
 function Ensure-GeneratedAssets {
@@ -145,7 +191,20 @@ try {
         throw "Expected installer was not created: $installer"
     }
 
-    if ($Sign) {
+    if ($DevSelfSign) {
+        Write-Step "Signing installer with internal development certificate"
+        $cert = Get-OrCreateDevCertificate -Subject $DevCertificateSubject
+        $signtool = Find-SignTool
+        if ($null -eq $signtool) {
+            throw "signtool.exe not found. Install Windows SDK signing tools."
+        }
+        & $signtool sign /sha1 $cert.Thumbprint /tr $TimestampUrl /td sha256 /fd sha256 $installer
+        $publicCert = Export-DevCertificate -Certificate $cert -OutputDirectory (Split-Path -Parent $installer)
+        Write-Host "Development public certificate exported:" -ForegroundColor Yellow
+        Write-Host "  $publicCert"
+        Write-Host "Trust it only on machines you control."
+    }
+    elseif ($Sign) {
         Write-Step "Signing installer"
         $signtool = Find-SignTool
         if ($null -eq $signtool) {
@@ -162,9 +221,14 @@ try {
         }
     }
 
+    Write-Step "Writing SHA-256 checksum"
+    $checksum = Write-InstallerChecksum -Installer $installer
+
     Write-Host ""
     Write-Host "Installer ready:" -ForegroundColor Green
     Write-Host "  $installer"
+    Write-Host "Checksum:"
+    Write-Host "  $checksum"
 }
 finally {
     Pop-Location
