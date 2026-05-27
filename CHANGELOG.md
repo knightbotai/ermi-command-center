@@ -15,6 +15,7 @@ All notable changes to ERMI Command Center will be documented here.
 - React/Vite command center UI with semantic search, ingest controls, entity panel, graph overview, archive counts, and operations log.
 - Project documentation for KnightBot/Jusstin handoff and local operations.
 - Canonical alias map for KnightBot, Jusstin, and Codee.
+- Windows single-click installer and Desktop shortcuts for launching/updating ERMI Command Center.
 
 ### Verified
 

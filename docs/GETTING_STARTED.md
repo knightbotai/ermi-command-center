@@ -16,6 +16,14 @@ Optional but recommended:
 
 ## Install
 
+For the Desktop shortcut flow on Windows, double-click:
+
+```text
+install\Install-ERMI.cmd
+```
+
+Manual setup:
+
 ```powershell
 python -m pip install -e ".[dev,ml]"
 npm install

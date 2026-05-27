@@ -2,6 +2,14 @@
 
 ## Local Services
 
+Desktop shortcut:
+
+```text
+ERMI Command Center
+```
+
+The shortcut runs `install/Launch-ERMI.ps1`, starts the API/UI if needed, and opens the browser.
+
 API:
 
 ```powershell
@@ -25,6 +33,20 @@ Default URLs:
 python -m pytest -q
 npm run build
 ```
+
+## Desktop Installer
+
+Installer entrypoint:
+
+```text
+install\Install-ERMI.cmd
+```
+
+PowerShell scripts:
+
+- `install/Install-ERMI.ps1`: installs prerequisites/dependencies and creates shortcuts.
+- `install/Launch-ERMI.ps1`: starts API/UI and opens the app.
+- `install/Update-ERMI.ps1`: pulls latest changes, updates dependencies, and verifies the build.
 
 ## GitHub Publishing
 

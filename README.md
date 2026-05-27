@@ -37,6 +37,19 @@ http://127.0.0.1:5173
 
 The UI provides a local command center for ingesting exports, semantic recall, entity inspection, graph export, archive counts, and operations logs.
 
+## Windows Desktop Installer
+
+After cloning the repo on Windows, double-click:
+
+```text
+install\Install-ERMI.cmd
+```
+
+The installer checks core prerequisites, installs ERMI dependencies, initializes the local archive, and creates two Desktop shortcuts:
+
+- `ERMI Command Center`
+- `Update ERMI Command Center`
+
 ## Update Workflow
 
 ```powershell
@@ -47,7 +60,7 @@ npm run api
 npm run dev:ui
 ```
 
-See [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), and [CHANGELOG.md](CHANGELOG.md) for ongoing project notes.
+See [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md), [docs/INSTALLER.md](docs/INSTALLER.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), and [CHANGELOG.md](CHANGELOG.md) for ongoing project notes.
 
 By default ERMI writes to:
 
