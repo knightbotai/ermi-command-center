@@ -34,6 +34,9 @@ try {
     $npm = Resolve-CommandPath -Names @("npm.cmd", "npm") -Fallbacks @("C:\Program Files\nodejs\npm.cmd")
     $env:Path = "$(Split-Path -Parent $npm);$env:Path"
 
+    Write-Step "Creating pre-update backup"
+    & $python -m ermi --root archive backup
+
     Write-Step "Pulling latest ERMI"
     git pull --ff-only
 

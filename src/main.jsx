@@ -184,6 +184,16 @@ function App() {
     addLog("Diagnostics", data.healthy ? "All checks passed" : "One or more checks need attention", data.healthy ? "Success" : "Warning");
   }
 
+  async function openFolder(name) {
+    const res = await fetch("/api/open-folder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    addLog("Open Folder", data.path || name, res.ok ? "Success" : "Warning");
+  }
+
   async function reviewImport(id, action) {
     const res = await fetch(`/api/review/imports/${encodeURIComponent(id)}/${action}`, { method: "POST" });
     const data = await res.json();
@@ -466,13 +476,26 @@ function App() {
               </div>
             </Panel>
 
+            <Panel title="Open Folders">
+              <div className="folder-actions">
+                <button onClick={() => openFolder("archive")}><FolderOpen size={17} /> Archive</button>
+                <button onClick={() => openFolder("vault")}><FolderOpen size={17} /> Vault</button>
+                <button onClick={() => openFolder("backups")}><FolderOpen size={17} /> Backups</button>
+                <button onClick={() => openFolder("exports")}><FolderOpen size={17} /> Exports</button>
+                <button onClick={() => openFolder("samples")}><FolderOpen size={17} /> Samples</button>
+              </div>
+            </Panel>
+
             <Panel title="Health Diagnostics" action={diagnostics?.healthy ? "Healthy" : "Check"}>
               <div className="diagnostic-list">
                 {(diagnostics?.checks || seedDiagnostics).map((item) => (
                   <div className={`diagnostic-row ${item.ok ? "ok" : "bad"}`} key={item.name}>
                     {item.ok ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
                     <strong>{item.name}</strong>
-                    <span>{item.detail}</span>
+                    <div>
+                      <span>{item.detail}</span>
+                      <small>{item.fix}</small>
+                    </div>
                   </div>
                 ))}
               </div>

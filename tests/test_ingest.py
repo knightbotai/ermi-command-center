@@ -11,7 +11,7 @@ from ermi.chatlasso import import_chatlasso, import_chatlasso_payload
 from ermi.exports import activity_summary, export_chat_csv, export_obsidian_second_brain, mine_code_blocks
 from ermi.flags import list_flags
 from ermi.ingest import ingest_export, reconstruct_messages
-from ermi.ops import backup_archive, restore_archive
+from ermi.ops import backup_archive, known_folder, restore_archive
 from ermi.review import list_import_reviews, set_import_review_status
 from ermi.search import search
 from ermi.setup import load_setup, run_first_setup
@@ -346,6 +346,7 @@ Jusstin and ERMI need a review queue.
     assert client.get("/api/timeline").json()["events"]
     assert "flags" in client.get("/api/flags").json()
     assert client.get("/api/review/imports").json()["imports"]
+    assert known_folder(root, "vault") == (root / "vault").resolve()
 
 
 def test_first_run_setup_and_diagnostics_api(tmp_path: Path) -> None:

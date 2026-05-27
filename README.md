@@ -75,7 +75,7 @@ npm run api
 npm run dev:ui
 ```
 
-See [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md), [docs/INSTALLER.md](docs/INSTALLER.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), and [CHANGELOG.md](CHANGELOG.md) for ongoing project notes.
+See [docs/MVP_HANDOFF.md](docs/MVP_HANDOFF.md), [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md), [docs/INSTALLER.md](docs/INSTALLER.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), and [CHANGELOG.md](CHANGELOG.md) for ongoing project notes.
 
 See [docs/CHATLASSO_INTEGRATION.md](docs/CHATLASSO_INTEGRATION.md) for the joined ChatLasso -> ERMI workflow.
 
@@ -91,6 +91,12 @@ archive/
   graph.json
   watchers.json
   backups/
+```
+
+Sample smoke-test data lives under:
+
+```text
+sample_data/
 ```
 
 ## Optional ML Embeddings

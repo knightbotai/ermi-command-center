@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import shutil
+import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -39,3 +41,29 @@ def restore_archive(root: Path, source: Path) -> Path:
         if backup_folder.exists():
             shutil.copytree(backup_folder, root / folder, dirs_exist_ok=True)
     return root
+
+
+def known_folder(root: Path, name: str) -> Path:
+    folders = {
+        "archive": root,
+        "raw": root / "raw",
+        "vault": root / "vault",
+        "backups": root / "backups",
+        "exports": root / "exports",
+        "samples": Path("sample_data").resolve(),
+    }
+    if name not in folders:
+        raise ValueError(f"Unknown folder shortcut: {name}")
+    return folders[name].resolve()
+
+
+def open_folder(root: Path, name: str | None = None, path: Path | None = None) -> Path:
+    target = path.expanduser().resolve() if path else known_folder(root, name or "archive")
+    target.mkdir(parents=True, exist_ok=True)
+    if sys.platform.startswith("win"):
+        subprocess.Popen(["explorer", str(target)])
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", str(target)])
+    else:
+        subprocess.Popen(["xdg-open", str(target)])
+    return target

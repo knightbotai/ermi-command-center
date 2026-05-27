@@ -63,6 +63,7 @@ python -m ermi --root archive diagnostics
 ```
 
 Diagnostics check Python, Node, npm, SQLite, archive writability, schema version, watched folders, backups, and Git remote.
+Each diagnostic includes a fix hint when attention is needed.
 
 ## Verification
 
@@ -149,6 +150,7 @@ python -m ermi --root archive restore C:\path\to\archive\backups\ermi-backup-YYY
 ```
 
 Backups include SQLite, raw source files, vault Markdown, watcher config, graph export, and a changelog snapshot when present.
+The Windows updater creates a backup automatically before pulling new code.
 
 ## Desktop Installer
 
@@ -163,6 +165,7 @@ PowerShell scripts:
 - `install/Install-ERMI.ps1`: installs prerequisites/dependencies and creates shortcuts.
 - `install/Launch-ERMI.ps1`: starts API/UI and opens the app.
 - `install/Update-ERMI.ps1`: pulls latest changes, updates dependencies, runs migrations, and verifies the build.
+- `docs/MVP_HANDOFF.md`: shortest handoff path for installation, setup, sample data, daily use, updates, and recovery.
 
 ## GitHub Publishing
 

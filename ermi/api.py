@@ -14,7 +14,7 @@ from .exports import activity_summary, export_chat_csv, export_obsidian_second_b
 from .flags import list_flags
 from .graph import export_graph
 from .ingest import ingest_export, init_archive
-from .ops import backup_archive, restore_archive
+from .ops import backup_archive, open_folder, restore_archive
 from .review import list_import_reviews, set_import_review_status
 from .search import search
 from .setup import load_setup, run_first_setup, save_setup
@@ -47,6 +47,11 @@ class RestoreRequest(BaseModel):
 class ExportRequest(BaseModel):
     source: str
     target: str | None = None
+
+
+class OpenFolderRequest(BaseModel):
+    name: str | None = None
+    path: str | None = None
 
 
 class SetupRequest(BaseModel):
@@ -279,6 +284,14 @@ def create_app(default_root: Path | None = None) -> FastAPI:
     @app.post("/api/backup")
     def backup() -> dict[str, object]:
         return {"path": str(backup_archive(root))}
+
+    @app.post("/api/open-folder")
+    def open_folder_endpoint(request: OpenFolderRequest) -> dict[str, object]:
+        try:
+            path = Path(request.path).expanduser().resolve() if request.path else None
+            return {"path": str(open_folder(root, request.name, path))}
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.post("/api/restore")
     def restore(request: RestoreRequest) -> dict[str, object]:

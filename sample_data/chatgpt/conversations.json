@@ -1,0 +1,53 @@
+[
+  {
+    "id": "sample_chatgpt_001",
+    "title": "Sample ERMI Setup Plan",
+    "create_time": 1779894000,
+    "update_time": 1779897600,
+    "current_node": "m2",
+    "mapping": {
+      "root": {
+        "id": "root",
+        "parent": null,
+        "children": ["m1"],
+        "message": null
+      },
+      "m1": {
+        "parent": "root",
+        "children": ["m2", "alt"],
+        "message": {
+          "id": "m1",
+          "author": { "role": "user" },
+          "create_time": 1779894000,
+          "content": {
+            "parts": ["Build a minimal ERMI memory workflow with setup, diagnostics, search, and backups."]
+          }
+        }
+      },
+      "alt": {
+        "parent": "m1",
+        "children": [],
+        "message": {
+          "id": "alt",
+          "author": { "role": "assistant" },
+          "create_time": 1779894300,
+          "content": {
+            "parts": ["This abandoned branch should not appear in true-path ERMI ingestion."]
+          }
+        }
+      },
+      "m2": {
+        "parent": "m1",
+        "children": [],
+        "message": {
+          "id": "m2",
+          "author": { "role": "assistant" },
+          "create_time": 1779897600,
+          "content": {
+            "parts": ["Use a local SQLite archive, Obsidian-ready Markdown, hybrid search, health diagnostics, and a backup before updates."]
+          }
+        }
+      }
+    }
+  }
+]

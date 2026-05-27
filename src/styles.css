@@ -713,12 +713,24 @@ td {
   justify-content: flex-start;
 }
 
+.folder-actions {
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.folder-actions button {
+  min-height: 44px;
+  justify-content: flex-start;
+}
+
 .diagnostic-list {
   display: grid;
 }
 
 .diagnostic-row {
-  min-height: 44px;
+  min-height: 54px;
   display: grid;
   grid-template-columns: 22px 110px minmax(0, 1fr);
   gap: 8px;
@@ -736,15 +748,23 @@ td {
 }
 
 .diagnostic-row strong,
-.diagnostic-row span {
+.diagnostic-row span,
+.diagnostic-row small {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.diagnostic-row span {
+.diagnostic-row span,
+.diagnostic-row small {
   color: var(--muted);
   font-size: 12px;
+}
+
+.diagnostic-row small {
+  color: var(--faint);
+  margin-top: 3px;
 }
 
 @media (max-width: 900px) {

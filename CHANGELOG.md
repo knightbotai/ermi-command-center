@@ -6,6 +6,11 @@ All notable changes to ERMI Command Center will be documented here.
 
 ### Added
 
+- MVP handoff guide with install, setup, sample-data, daily-use, update, and recovery notes.
+- Sample ChatGPT and ChatLasso data for smoke testing without personal exports.
+- Actionable diagnostic fix hints in API and command-center health checks.
+- Open-folder shortcuts for archive, vault, backups, exports, and sample data.
+- Pre-update backup step in the Windows updater.
 - First-run setup profile for saving ChatGPT export and ChatLasso SSI folder paths.
 - One-click setup runner that performs initial ChatGPT ingest, ChatLasso import, watcher registration, and scan.
 - MVP health diagnostics for Python, Node, npm, SQLite, schema, archive writes, watch folders, backups, and Git remote.
