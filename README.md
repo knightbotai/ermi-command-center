@@ -20,6 +20,8 @@ START-HERE.cmd
 
 That runs the one-click installer, diagnostics, desktop shortcut setup, and app launch.
 
+To build a Windows setup wizard executable, see [docs/SIGNED_WINDOWS_INSTALLER.md](docs/SIGNED_WINDOWS_INSTALLER.md).
+
 Manual CLI flow:
 
 ```powershell
@@ -85,7 +87,7 @@ npm run api
 npm run dev:ui
 ```
 
-See [docs/MVP_HANDOFF.md](docs/MVP_HANDOFF.md), [docs/DEE_TORCH_POST_CLONE.md](docs/DEE_TORCH_POST_CLONE.md), [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md), [docs/INSTALLER.md](docs/INSTALLER.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), and [CHANGELOG.md](CHANGELOG.md) for ongoing project notes.
+See [docs/MVP_HANDOFF.md](docs/MVP_HANDOFF.md), [docs/DEE_TORCH_POST_CLONE.md](docs/DEE_TORCH_POST_CLONE.md), [docs/SIGNED_WINDOWS_INSTALLER.md](docs/SIGNED_WINDOWS_INSTALLER.md), [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md), [docs/INSTALLER.md](docs/INSTALLER.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), and [CHANGELOG.md](CHANGELOG.md) for ongoing project notes.
 
 See [docs/CHATLASSO_INTEGRATION.md](docs/CHATLASSO_INTEGRATION.md) for the joined ChatLasso -> ERMI workflow.
 

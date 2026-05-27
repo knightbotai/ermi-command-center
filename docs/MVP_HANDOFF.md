@@ -73,6 +73,20 @@ Update ERMI Command Center
 
 The updater creates a backup before pulling the latest code, updates dependencies, runs migrations, and verifies tests/build.
 
+## Windows Setup Wizard
+
+The repo includes an Inno Setup project for building a traditional Windows installer:
+
+```powershell
+.\install\Build-WindowsInstaller.ps1 -InstallTooling
+```
+
+Signing is covered in:
+
+```text
+docs\SIGNED_WINDOWS_INSTALLER.md
+```
+
 ## Recovery
 
 Backups are written under:

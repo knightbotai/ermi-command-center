@@ -1,5 +1,6 @@
 param(
-    [switch]$LaunchAfterInstall
+    [switch]$LaunchAfterInstall,
+    [switch]$SkipShortcuts
 )
 
 $ErrorActionPreference = "Stop"
@@ -126,29 +127,36 @@ try {
     Write-Step "Running health diagnostics"
     & $python -m ermi --root archive diagnostics
 
-    Write-Step "Creating desktop shortcuts"
-    New-Shortcut `
-        -Path $AppShortcut `
-        -TargetPath "powershell.exe" `
-        -Arguments "-NoProfile -ExecutionPolicy Bypass -File `"$InstallDir\install\Launch-ERMI.ps1`"" `
-        -WorkingDirectory $InstallDir `
-        -Description "Launch ERMI Command Center"
+    if (-not $SkipShortcuts) {
+        Write-Step "Creating desktop shortcuts"
+        New-Shortcut `
+            -Path $AppShortcut `
+            -TargetPath "powershell.exe" `
+            -Arguments "-NoProfile -ExecutionPolicy Bypass -File `"$InstallDir\install\Launch-ERMI.ps1`"" `
+            -WorkingDirectory $InstallDir `
+            -Description "Launch ERMI Command Center"
 
-    New-Shortcut `
-        -Path $UpdateShortcut `
-        -TargetPath "powershell.exe" `
-        -Arguments "-NoProfile -ExecutionPolicy Bypass -File `"$InstallDir\install\Update-ERMI.ps1`"" `
-        -WorkingDirectory $InstallDir `
-        -Description "Update ERMI Command Center"
+        New-Shortcut `
+            -Path $UpdateShortcut `
+            -TargetPath "powershell.exe" `
+            -Arguments "-NoProfile -ExecutionPolicy Bypass -File `"$InstallDir\install\Update-ERMI.ps1`"" `
+            -WorkingDirectory $InstallDir `
+            -Description "Update ERMI Command Center"
+    }
 }
 finally {
     Pop-Location
 }
 
 Write-Host ""
-Write-Host "Created shortcuts:" -ForegroundColor Green
-Write-Host "  $AppShortcut"
-Write-Host "  $UpdateShortcut"
+if (-not $SkipShortcuts) {
+    Write-Host "Created shortcuts:" -ForegroundColor Green
+    Write-Host "  $AppShortcut"
+    Write-Host "  $UpdateShortcut"
+}
+else {
+    Write-Host "Shortcut creation skipped; installer-managed shortcuts will be used." -ForegroundColor Green
+}
 Write-Host ""
 Write-Host "Launch ERMI from the desktop shortcut, or run:"
 Write-Host "  npm run api"

@@ -15,6 +15,7 @@ build/
 
 archive/
 artifacts/
+installer/output/
 *.log
 tmp_*/
 *.sqlite3
