@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "api": "python -m ermi.server --root archive --host 127.0.0.1 --port 8765",
-    "dev": "vite --host 127.0.0.1",
-    "dev:ui": "vite --host 127.0.0.1 --port 5173",
+    "dev": "node node_modules/vite/bin/vite.js --host 127.0.0.1",
+    "dev:ui": "node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173",
     "test": "python -m pytest -q",
-    "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "build": "node node_modules/vite/bin/vite.js build",
+    "preview": "node node_modules/vite/bin/vite.js preview --host 127.0.0.1"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.1.1",

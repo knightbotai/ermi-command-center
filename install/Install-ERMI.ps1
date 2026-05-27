@@ -36,6 +36,26 @@ function Refresh-Path {
     $env:Path = "$machinePath;$userPath"
 }
 
+function Resolve-CommandPath {
+    param(
+        [string[]]$Names,
+        [string[]]$Fallbacks
+    )
+
+    foreach ($name in $Names) {
+        $command = Get-Command $name -ErrorAction SilentlyContinue
+        if ($null -ne $command) {
+            return $command.Source
+        }
+    }
+    foreach ($path in $Fallbacks) {
+        if (Test-Path $path) {
+            return $path
+        }
+    }
+    throw "Unable to find any of: $($Names -join ', ')"
+}
+
 function Ensure-Prerequisites {
     Refresh-Path
 
@@ -83,18 +103,21 @@ Write-Host "ERMI Command Center Installer" -ForegroundColor Green
 Write-Host "Install directory: $InstallDir"
 
 Ensure-Prerequisites
+$python = Resolve-CommandPath -Names @("python.exe", "python") -Fallbacks @("$env:LOCALAPPDATA\Programs\Python\Python313\python.exe")
+$npm = Resolve-CommandPath -Names @("npm.cmd", "npm") -Fallbacks @("C:\Program Files\nodejs\npm.cmd")
+$env:Path = "$(Split-Path -Parent $npm);$env:Path"
 
 Write-Step "Installing Python package"
 Push-Location $InstallDir
 try {
-    python -m pip install --upgrade pip setuptools wheel
-    python -m pip install -e ".[dev,ml]"
+    & $python -m pip install --upgrade pip setuptools wheel
+    & $python -m pip install -e ".[dev,ml]"
 
     Write-Step "Installing frontend dependencies"
-    npm install
+    & $npm install
 
     Write-Step "Preparing archive directories"
-    python -m ermi --root archive init
+    & $python -m ermi --root archive init
 
     Write-Step "Creating desktop shortcuts"
     New-Shortcut `
@@ -123,4 +146,3 @@ Write-Host ""
 Write-Host "Launch ERMI from the desktop shortcut, or run:"
 Write-Host "  npm run api"
 Write-Host "  npm run dev:ui"
-

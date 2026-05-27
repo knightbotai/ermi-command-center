@@ -19,6 +19,8 @@ import {
   ShieldCheck,
   Sparkles,
   TerminalSquare,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import "./styles.css";
 
@@ -38,6 +40,13 @@ function App() {
   const [query, setQuery] = useState("recursive memory architecture");
   const [source, setSource] = useState("");
   const [sourceType, setSourceType] = useState("chatgpt");
+  const [watchSource, setWatchSource] = useState("");
+  const [watchers, setWatchers] = useState([]);
+  const [schema, setSchema] = useState(null);
+  const [flags, setFlags] = useState([]);
+  const [timeline, setTimeline] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [filters, setFilters] = useState({ mode: "", status: "", archetype: "", project: "", identity: "", regression: false });
   const [results, setResults] = useState([]);
   const [log, setLog] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -47,14 +56,25 @@ function App() {
   }, []);
 
   async function refreshAll() {
-    const [statusRes, entityRes, graphRes] = await Promise.all([
+    const [statusRes, entityRes, graphRes, watcherRes, schemaRes, flagsRes, timelineRes, reviewRes] = await Promise.all([
       fetch("/api/status"),
       fetch("/api/entities?limit=12"),
       fetch("/api/graph"),
+      fetch("/api/watchers"),
+      fetch("/api/schema"),
+      fetch("/api/flags?limit=20"),
+      fetch("/api/timeline?limit=40"),
+      fetch("/api/review/imports"),
     ]);
-    setStatus(await statusRes.json());
+    const nextStatus = await statusRes.json();
+    setStatus(nextStatus);
     setEntities((await entityRes.json()).entities);
     setGraph(await graphRes.json());
+    setWatchers((await watcherRes.json()).chatlasso || nextStatus.watchers || []);
+    setSchema(await schemaRes.json());
+    setFlags((await flagsRes.json()).flags || []);
+    setTimeline((await timelineRes.json()).events || []);
+    setReviews((await reviewRes.json()).imports || []);
   }
 
   async function runSearch(event) {
@@ -62,7 +82,11 @@ function App() {
     if (!query.trim()) return;
     setBusy(true);
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=8`);
+      const params = new URLSearchParams({ q: query, limit: "8" });
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.set(key, String(value));
+      });
+      const res = await fetch(`/api/search?${params.toString()}`);
       const data = await res.json();
       setResults(data.results || []);
       addLog("Recall", `${data.results?.length || 0} results for "${query}"`, "Success");
@@ -99,6 +123,57 @@ function App() {
     const data = await res.json();
     addLog("Graph", `Exported ${data.path}`, "Success");
     await refreshAll();
+  }
+
+  async function createBackup() {
+    const res = await fetch("/api/backup", { method: "POST" });
+    const data = await res.json();
+    addLog("Backup", data.path || "Backup created", res.ok ? "Success" : "Warning");
+  }
+
+  async function reviewImport(id, action) {
+    const res = await fetch(`/api/review/imports/${encodeURIComponent(id)}/${action}`, { method: "POST" });
+    const data = await res.json();
+    addLog("Review", `${action}: ${data.conversation_id || id}`, res.ok ? "Success" : "Warning");
+    await refreshAll();
+  }
+
+  async function addWatchFolder(event) {
+    event.preventDefault();
+    if (!watchSource.trim()) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/watchers/chatlasso", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: watchSource }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to add watcher");
+      setWatchers(data.chatlasso || []);
+      addLog("Watch", `Watching ${watchSource}`, "Success");
+      setWatchSource("");
+    } catch (error) {
+      addLog("Watch", error.message, "Warning");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function scanWatchFolders() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/watchers/chatlasso/scan", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Watch scan failed");
+      setWatchers(data.chatlasso || []);
+      addLog("Watch Scan", `${data.stats.changed} changed, ${data.stats.chunks} chunks`, "Success");
+      await refreshAll();
+    } catch (error) {
+      addLog("Watch Scan", error.message, "Warning");
+    } finally {
+      setBusy(false);
+    }
   }
 
   function addLog(operation, details, state) {
@@ -150,7 +225,7 @@ function App() {
         <header className="topbar">
           <StatusBlock icon={FolderOpen} label="Archive Root" value={status?.archiveRoot || "archive"} />
           <StatusBlock icon={Database} label="Database Status" value={status?.healthy ? "Healthy" : "Unknown"} accent="green" />
-          <StatusBlock icon={BrainCircuit} label="Embedding Engine" value="sentence-transformers / fallback hash" />
+          <StatusBlock icon={BrainCircuit} label="Schema" value={schema ? `${schema.current}/${schema.latest}` : "Checking"} />
           <StatusBlock icon={Activity} label="Last Ingest" value={status?.lastIngest?.imported_at || "No imports yet"} />
           <button className="icon-button" onClick={refreshAll} title="Refresh"><RefreshCw size={18} /></button>
         </header>
@@ -164,10 +239,16 @@ function App() {
                 <button disabled={busy}>Search</button>
               </form>
               <div className="filter-row">
-                <button><ListFilter size={17} /> Filters</button>
-                <select><option>All Time</option><option>Recent</option></select>
-                <select><option>All Sources</option><option>ChatGPT</option><option>Vault</option></select>
-                <label><input type="checkbox" defaultChecked /> Hybrid Search</label>
+                <ListFilter size={17} />
+                <input value={filters.mode} onChange={(event) => setFilters({ ...filters, mode: event.target.value })} placeholder="Mode" />
+                <input value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })} placeholder="Status" />
+                <select value={filters.project} onChange={(event) => setFilters({ ...filters, project: event.target.value })}>
+                  <option value="">All Projects</option><option>ERMI</option><option>ChatLasso</option>
+                </select>
+                <select value={filters.identity} onChange={(event) => setFilters({ ...filters, identity: event.target.value })}>
+                  <option value="">All Identities</option><option>KnightBot</option><option>Jusstin/DeeTorch</option>
+                </select>
+                <label><input type="checkbox" checked={filters.regression} onChange={(event) => setFilters({ ...filters, regression: event.target.checked })} /> Flags</label>
               </div>
             </Panel>
 
@@ -196,6 +277,19 @@ function App() {
                 </form>
               </Panel>
 
+              <Panel title="Watched Folders">
+                <form className="watch-box" onSubmit={addWatchFolder}>
+                  <input value={watchSource} onChange={(event) => setWatchSource(event.target.value)} placeholder="C:\\Path\\To\\10_Data_Harvest\\11_SSI_Raw" />
+                  <div className="watch-actions">
+                    <button disabled={busy || !watchSource.trim()}><FolderOpen size={17} /> Watch Folder</button>
+                    <button type="button" disabled={busy} onClick={scanWatchFolders}><RefreshCw size={17} /> Scan Now</button>
+                  </div>
+                  <div className="watch-list">
+                    {watchers.length ? watchers.map((item) => <span key={item}>{item}</span>) : <span>No ChatLasso folders watched yet.</span>}
+                  </div>
+                </form>
+              </Panel>
+
               <Panel title="Recent Operations">
                 <table>
                   <tbody>
@@ -211,6 +305,52 @@ function App() {
                 </table>
               </Panel>
             </div>
+
+            <div className="ops-grid">
+              <Panel title="Regression Flags" action={`${flags.length} active`}>
+                <div className="flag-list">
+                  {(flags.length ? flags : [{ title: "No active flags", mode: "Clean", loss_report: "Regression surface is quiet." }]).map((item) => (
+                    <div className="flag-row" key={item.id || item.title}>
+                      <ShieldCheck size={17} />
+                      <strong>{item.title}</strong>
+                      <span>{item.mode || "Unknown mode"}</span>
+                      <small>{item.loss_report || item.reason || "Needs review"}</small>
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+
+              <Panel title="Import Review Queue" action={`${reviews.filter((item) => item.status === "pending_review").length} pending`}>
+                <div className="review-list">
+                  {(reviews.length ? reviews : [{ conversation_id: "none", title: "No imports awaiting review", status: "accepted", reason: "Clean imports auto-accept." }]).slice(0, 8).map((item) => (
+                    <div className="review-row" key={item.conversation_id}>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <span>{item.status} · {item.reason || "No review note"}</span>
+                      </div>
+                      {item.conversation_id !== "none" && (
+                        <div className="review-actions">
+                          <button title="Accept import" onClick={() => reviewImport(item.conversation_id, "accept")}><CheckCircle2 size={16} /></button>
+                          <button title="Reject import" onClick={() => reviewImport(item.conversation_id, "reject")}><XCircle size={16} /></button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+            </div>
+
+            <Panel title="Concept Evolution Timeline" action={`${timeline.length} events`}>
+              <div className="timeline-list">
+                {(timeline.length ? timeline : [{ event_at: "No events yet", concept: "Import ChatLasso SSI or ChatGPT exports", title: "Waiting for memory" }]).slice(0, 12).map((item, index) => (
+                  <div className="timeline-row" key={`${item.conversation_id || "seed"}:${item.concept || index}`}>
+                    <span>{item.event_at || "undated"}</span>
+                    <strong>{item.concept || item.title}</strong>
+                    <small>{item.mode || item.project || "ERMI"}</small>
+                  </div>
+                ))}
+              </div>
+            </Panel>
           </div>
 
           <aside className="intel">
@@ -240,7 +380,7 @@ function App() {
               <div className="stat-grid three">
                 {graphStats.map(([label, value]) => <MiniStat key={label} label={label} value={value} />)}
               </div>
-              <div className="graph-line" />
+              <GraphPreview graph={graph} />
               <button className="wide-action" onClick={exportGraph}><GitBranch size={18} /> Export Graph</button>
             </Panel>
 
@@ -248,6 +388,7 @@ function App() {
               <div className="quick-actions">
                 <button onClick={refreshAll}><RefreshCw size={18} /> Rebuild View</button>
                 <button onClick={exportGraph}><Download size={18} /> Export Data</button>
+                <button onClick={createBackup}><Archive size={18} /> Backup</button>
                 <button onClick={() => addLog("Diagnostics", "Local API and SQLite responded", "Success")}><Activity size={18} /> Run Diagnostics</button>
               </div>
             </Panel>
@@ -293,9 +434,38 @@ function ResultRow({ item }) {
       <div>
         <strong>{item.title}</strong>
         <p>{item.preview}</p>
+        <div className="result-meta">
+          <span>{item.mode || item.project || "ERMI"}</span>
+          <span>{item.status || item.import_status || "accepted"}</span>
+          {item.regression_contradictions_found && <span className="warning">Regression</span>}
+        </div>
       </div>
       <small>{item.markdown_path || "No vault file yet"}</small>
     </div>
+  );
+}
+
+function GraphPreview({ graph }) {
+  const nodes = (graph.nodes || []).slice(0, 16);
+  const edges = (graph.edges || []).slice(0, 24);
+  const positions = nodes.map((node, index) => {
+    const angle = (Math.PI * 2 * index) / Math.max(nodes.length, 1);
+    const radius = node.type === "conversation" ? 72 : 50;
+    return { ...node, x: 105 + Math.cos(angle) * radius, y: 82 + Math.sin(angle) * radius };
+  });
+  const byId = new Map(positions.map((node) => [node.id, node]));
+  return (
+    <svg className="graph-preview" viewBox="0 0 210 165" role="img" aria-label="ERMI graph preview">
+      {edges.map((edge, index) => {
+        const source = byId.get(edge.source);
+        const target = byId.get(edge.target);
+        if (!source || !target) return null;
+        return <line key={index} x1={source.x} y1={source.y} x2={target.x} y2={target.y} />;
+      })}
+      {positions.map((node) => (
+        <circle key={node.id} cx={node.x} cy={node.y} r={node.type === "conversation" ? 6 : 4} className={node.flagged ? "flagged-node" : ""} />
+      ))}
+    </svg>
   );
 }
 

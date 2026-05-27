@@ -1,11 +1,21 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
 
+from fastapi.testclient import TestClient
+
+from ermi.api import create_app
 from ermi.chatlasso import import_chatlasso, import_chatlasso_payload
+from ermi.flags import list_flags
 from ermi.ingest import ingest_export
+from ermi.ops import backup_archive, restore_archive
+from ermi.review import list_import_reviews, set_import_review_status
 from ermi.search import search
+from ermi.storage import LATEST_SCHEMA_VERSION, Store
+from ermi.timeline import concept_timeline
+from ermi.watch import add_watcher, scan_chatlasso_watchers
 
 
 def test_ingest_chatgpt_export(tmp_path: Path) -> None:
@@ -98,6 +108,18 @@ hash_beacon: "abc123"
     assert list((root / "vault" / "chatlasso" / "2026").glob("*.md"))
     result = search(root, "live LLM conversations durable memory", 1)[0]
     assert result["chunk_id"].startswith("chatlasso_")
+    with Store(root / "ermi.sqlite3") as store:
+        row = store.conn.execute("SELECT * FROM chatlasso_metadata").fetchone()
+        conversation = store.conn.execute("SELECT source_kind, project, identity, import_status FROM conversations").fetchone()
+    assert row["mode"] == "Architecture"
+    assert row["archetype"] == "Prime Auditor"
+    assert row["status"] == "Active"
+    assert row["hash_beacon"] == "abc123"
+    assert json.loads(row["domain_nodes"]) == ["ERMI", "ChatLasso", "Obsidian"]
+    assert conversation["source_kind"] == "chatlasso"
+    assert conversation["project"] == "ChatLasso"
+    assert conversation["identity"] == "KnightBot"
+    assert conversation["import_status"] == "accepted"
 
 
 def test_import_chatlasso_payload(tmp_path: Path) -> None:
@@ -122,3 +144,142 @@ ChatLasso can send SSI Markdown directly into ERMI without a filesystem path.
     assert stats["conversations"] == 1
     assert list((root / "raw" / "chatlasso_payloads").glob("*.md"))
     assert search(root, "without a filesystem path", 1)[0]["chunk_id"].startswith("chatlasso_")
+
+
+def test_watch_chatlasso_imports_only_changed_files(tmp_path: Path) -> None:
+    source_dir = tmp_path / "ssi"
+    source_dir.mkdir()
+    source = source_dir / "watch_test.md"
+    source.write_text(
+        """---
+type: chat_extracted_ssi
+mode: Watcher
+domain_nodes: ["Watcher", "ERMI"]
+date_extracted: 2026-05-27T18:00:00+00:00
+---
+
+# Watcher Test
+
+## Cognitive DNA
+The watcher imports changed ChatLasso SSI files.
+""",
+        encoding="utf-8",
+    )
+
+    root = tmp_path / "archive"
+    add_watcher(root, source_dir)
+
+    first = scan_chatlasso_watchers(root)
+    second = scan_chatlasso_watchers(root)
+
+    assert first["watchers"] == 1
+    assert first["seen"] == 1
+    assert first["changed"] == 1
+    assert first["imported"] == 1
+    assert second["seen"] == 1
+    assert second["changed"] == 0
+    assert second["imported"] == 0
+
+
+def test_schema_migration_adds_versioned_columns_to_existing_archive(tmp_path: Path) -> None:
+    db = tmp_path / "archive" / "ermi.sqlite3"
+    db.parent.mkdir()
+    conn = sqlite3.connect(db)
+    conn.execute(
+        """
+        CREATE TABLE conversations (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            created_at TEXT,
+            updated_at TEXT,
+            source_id INTEGER NOT NULL,
+            markdown_path TEXT NOT NULL,
+            tags TEXT NOT NULL DEFAULT '[]'
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
+
+    with Store(db) as store:
+        columns = {row["name"] for row in store.conn.execute("PRAGMA table_info(conversations)").fetchall()}
+        assert store.schema_version() == LATEST_SCHEMA_VERSION
+
+    assert {"source_kind", "schema_version", "project", "identity", "import_status", "metadata_json"} <= columns
+
+
+def test_hybrid_search_filters_regression_flags(tmp_path: Path) -> None:
+    root = tmp_path / "archive"
+    stats = import_chatlasso_payload(
+        "Contradiction Payload",
+        """---
+type: chat_extracted_ssi
+mode: Architecture
+archetype: Prime Auditor
+status: Active
+domain_nodes: ["ERMI"]
+date_extracted: 2026-05-27T18:00:00+00:00
+audit_pass_status: false
+regression_contradictions_found: true
+regression_details: ["Overturned frozen memory rule"]
+loss_report: "Possible drift"
+hash_beacon: "beadfeed"
+---
+
+# Contradiction Payload
+
+## Regression Detection
+- Overturned frozen memory rule
+
+## Architectural Commits
+The frozen memory rule was contradicted.
+""",
+        root,
+    )
+
+    assert stats["conversations"] == 1
+    results = search(root, "frozen memory rule", 5, {"regression": True, "mode": "Architecture"})
+    assert results
+    assert results[0]["lexical_score"] >= 0
+    assert results[0]["regression_contradictions_found"] is True
+    assert list_flags(root)[0]["regression_contradictions_found"] is True
+
+
+def test_timeline_review_backup_restore_and_api(tmp_path: Path) -> None:
+    root = tmp_path / "archive"
+    import_chatlasso_payload(
+        "Review Payload",
+        """---
+type: chat_extracted_ssi
+mode: Review
+archetype: DeeTorch
+status: Active
+domain_nodes: ["Jusstin", "ERMI"]
+date_extracted: 2026-05-27T19:00:00+00:00
+audit_pass_status: false
+loss_report: "Needs human review"
+---
+
+# Review Payload
+
+## Cognitive DNA
+Jusstin and ERMI need a review queue.
+""",
+        root,
+    )
+    reviews = list_import_reviews(root)
+    assert reviews[0]["status"] == "pending_review"
+    cid = reviews[0]["conversation_id"]
+    assert set_import_review_status(root, cid, "accepted")["status"] == "accepted"
+    assert concept_timeline(root)[0]["mode"] == "Review"
+
+    backup = backup_archive(root)
+    restored = tmp_path / "restored"
+    restore_archive(restored, backup)
+    assert (restored / "ermi.sqlite3").exists()
+
+    client = TestClient(create_app(root))
+    assert client.get("/api/schema").json()["latest"] == LATEST_SCHEMA_VERSION
+    assert client.get("/api/timeline").json()["events"]
+    assert "flags" in client.get("/api/flags").json()
+    assert client.get("/api/review/imports").json()["imports"]

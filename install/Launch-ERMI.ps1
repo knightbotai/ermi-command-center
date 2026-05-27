@@ -19,19 +19,39 @@ function Start-HiddenProcess {
     Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -WorkingDirectory $WorkingDirectory -WindowStyle Hidden
 }
 
+function Resolve-CommandPath {
+    param(
+        [string[]]$Names,
+        [string[]]$Fallbacks
+    )
+
+    foreach ($name in $Names) {
+        $command = Get-Command $name -ErrorAction SilentlyContinue
+        if ($null -ne $command) {
+            return $command.Source
+        }
+    }
+    foreach ($path in $Fallbacks) {
+        if (Test-Path $path) {
+            return $path
+        }
+    }
+    throw "Unable to find any of: $($Names -join ', ')"
+}
+
 Push-Location $Root
 try {
+    $python = Resolve-CommandPath -Names @("python.exe", "python") -Fallbacks @("$env:LOCALAPPDATA\Programs\Python\Python313\python.exe")
+    $npm = Resolve-CommandPath -Names @("npm.cmd", "npm") -Fallbacks @("C:\Program Files\nodejs\npm.cmd")
+    $env:Path = "$(Split-Path -Parent $npm);$env:Path"
+
     if (-not (Test-Port $ApiPort)) {
-        Start-HiddenProcess -FilePath "python" -ArgumentList @("-m", "ermi.server", "--root", "archive", "--host", "127.0.0.1", "--port", "$ApiPort") -WorkingDirectory $Root
+        Start-HiddenProcess -FilePath $python -ArgumentList @("-m", "ermi.server", "--root", "archive", "--host", "127.0.0.1", "--port", "$ApiPort") -WorkingDirectory $Root
         Start-Sleep -Seconds 2
     }
 
     if (-not (Test-Port $UiPort)) {
-        $npm = (Get-Command npm.cmd -ErrorAction SilentlyContinue)
-        if ($null -eq $npm) {
-            $npm = Get-Command npm -ErrorAction Stop
-        }
-        Start-HiddenProcess -FilePath $npm.Source -ArgumentList @("run", "dev:ui") -WorkingDirectory $Root
+        Start-HiddenProcess -FilePath $npm -ArgumentList @("run", "dev:ui") -WorkingDirectory $Root
         Start-Sleep -Seconds 3
     }
 
@@ -40,4 +60,3 @@ try {
 finally {
     Pop-Location
 }
-

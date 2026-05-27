@@ -6,6 +6,17 @@ All notable changes to ERMI Command Center will be documented here.
 
 ### Added
 
+- ChatLasso watched-folder registration and scan/import workflow.
+- SQLite schema versioning with additive migrations for existing local archives.
+- Dedicated ChatLasso SSI metadata storage for mode, archetype, status, domain nodes, audit status, hash beacon, loss report, regression flags, source path, and source hash.
+- Hybrid search combining embedding similarity with SQLite FTS5 lexical recall and structured filters.
+- Regression/contradiction flags API and command-center flag panel.
+- Concept evolution timeline API and command-center timeline panel.
+- Richer graph export with ChatLasso mode/archetype/status nodes plus command-center graph preview.
+- Import review queue with accept/reject actions for flagged or malformed imports.
+- Project and identity segmentation defaults for ERMI, ChatLasso, KnightBot, and Jusstin/DeeTorch.
+- Backup/restore CLI and API support for local archive recovery.
+- Hardened installer, launcher, updater, and frontend scripts for Windows PATH issues.
 - ChatLasso SSI Markdown importer for files or folders.
 - Direct ChatLasso payload import endpoint for browser-to-ERMI handoff.
 - Command center ingest mode toggle for ChatGPT exports versus ChatLasso SSI payloads.

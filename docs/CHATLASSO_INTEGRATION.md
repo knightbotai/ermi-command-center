@@ -26,10 +26,10 @@ ERMI is the archive and recall layer:
 Live LLM session
   -> ChatLasso bookmarklet / relay
   -> SSI synthesis
-  -> Obsidian 10_Data_Harvest/11_SSI_Raw
-  -> ERMI import-chatlasso
+  -> Obsidian 10_Data_Harvest/11_SSI_Raw or Send to ERMI
+  -> ERMI import-chatlasso / watched folder / direct payload
   -> SQLite + embeddings + vault/chatlasso
-  -> semantic recall + graph export
+  -> hybrid recall + flags + timeline + graph export
 ```
 
 ## CLI Import
@@ -51,6 +51,16 @@ python -m ermi import-chatlasso C:\path\to\example_SSI.md
 3. Paste a file or folder path.
 4. Click `Import SSI`.
 
+## Watched Folder Import
+
+Register the ChatLasso raw SSI folder once:
+
+```powershell
+python -m ermi watch-chatlasso C:\path\to\10_Data_Harvest\11_SSI_Raw --once
+```
+
+The command center also has a `Watched Folders` panel. It stores watched paths in `archive/watchers.json` and only re-imports changed Markdown files.
+
 ## Mapping
 
 | ChatLasso SSI | ERMI |
@@ -59,6 +69,10 @@ python -m ermi import-chatlasso C:\path\to\example_SSI.md
 | Canonical copy | `archive/vault/chatlasso` |
 | Headings | Semantic chunks |
 | `domain_nodes` | Concept entities |
+| `mode` / `archetype` / `status` | Structured ChatLasso metadata and graph nodes |
+| `audit_pass_status` | Import review and flag state |
+| `regression_contradictions_found` / details | Regression flag panel and search filters |
+| `loss_report` / `hash_beacon` | Integrity metadata and review state |
 | SSI body | Searchable memory text |
 | Filename/title | Conversation title |
 
@@ -79,4 +93,4 @@ The payload shape is:
 }
 ```
 
-ERMI preserves that payload under `archive/raw/chatlasso_payloads` and indexes it as a ChatLasso memory.
+ERMI preserves that payload under `archive/raw/chatlasso_payloads` and indexes it as a ChatLasso memory. Clean imports are accepted automatically; flagged imports appear in the review queue before they are treated as stable memory.

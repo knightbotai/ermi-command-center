@@ -34,6 +34,13 @@ python -m pytest -q
 npm run build
 ```
 
+If a fresh PowerShell window cannot find Python or npm, use the installed defaults:
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\Python\Python313\python.exe" -m pytest -q
+$env:Path = "C:\Program Files\nodejs;$env:Path"; npm run build
+```
+
 ## ChatLasso Import
 
 CLI:
@@ -42,12 +49,51 @@ CLI:
 python -m ermi import-chatlasso C:\path\to\10_Data_Harvest\11_SSI_Raw
 ```
 
+Watched-folder scan:
+
+```powershell
+python -m ermi watch-chatlasso C:\path\to\10_Data_Harvest\11_SSI_Raw --once
+```
+
+Continuous watcher:
+
+```powershell
+python -m ermi watch-chatlasso C:\path\to\10_Data_Harvest\11_SSI_Raw --interval 15
+```
+
 UI:
 
 1. Open `ERMI Command Center`.
 2. In `Ingest`, select `ChatLasso SSI`.
 3. Paste a single `.md` file path or the folder where ChatLasso writes SSI files.
 4. Click `Import SSI`.
+
+For recurring imports, use `Watched Folders`, paste the ChatLasso SSI folder, and click `Scan Now`.
+
+## Schema, Flags, Timeline, Review
+
+```powershell
+python -m ermi --root archive migrate
+python -m ermi --root archive flags
+python -m ermi --root archive timeline
+python -m ermi --root archive review
+```
+
+Flagged ChatLasso imports enter `pending_review` when ERMI sees a regression contradiction, failed audit status, or missing hash beacon. Use the command center review buttons or:
+
+```powershell
+python -m ermi --root archive accept-import <conversation_id>
+python -m ermi --root archive reject-import <conversation_id>
+```
+
+## Backup / Restore
+
+```powershell
+python -m ermi --root archive backup
+python -m ermi --root archive restore C:\path\to\archive\backups\ermi-backup-YYYYMMDD-HHMMSS
+```
+
+Backups include SQLite, raw source files, vault Markdown, watcher config, graph export, and a changelog snapshot when present.
 
 ## Desktop Installer
 
@@ -61,7 +107,7 @@ PowerShell scripts:
 
 - `install/Install-ERMI.ps1`: installs prerequisites/dependencies and creates shortcuts.
 - `install/Launch-ERMI.ps1`: starts API/UI and opens the app.
-- `install/Update-ERMI.ps1`: pulls latest changes, updates dependencies, and verifies the build.
+- `install/Update-ERMI.ps1`: pulls latest changes, updates dependencies, runs migrations, and verifies the build.
 
 ## GitHub Publishing
 

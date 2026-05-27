@@ -82,14 +82,15 @@ def sha256_text(value: str) -> str:
 def normalize_chatlasso_file(source: Path, source_id: int, root: Path, embedder: Any) -> dict[str, Any]:
     text = source.read_text(encoding="utf-8")
     frontmatter, body = split_frontmatter(text)
-    metadata = parse_frontmatter(frontmatter)
+    raw_metadata = parse_frontmatter(frontmatter)
+    metadata = normalize_ssi_metadata(raw_metadata, body, source)
     title = clean_title(metadata.get("title") or first_heading(body) or source.stem)
     cid = f"chatlasso_{sha256(source)[:16]}"
     created_at = metadata.get("date_extracted") or timestamp_to_iso(source.stat().st_mtime)
     year = year_from_iso(created_at)
     tags = sorted({"chatlasso", "ssi", "synthesis", *metadata_tags(metadata)})
     chunks = build_chatlasso_chunks(cid, title, body, tags, embedder)
-    domain_nodes = parse_list_value(metadata.get("domain_nodes", ""))
+    domain_nodes = ensure_list(metadata.get("domain_nodes", []))
     entity_candidates = extract_entities(text)
     entities = [{"name": name, "kind": kind, "score": score} for name, kind, score in entity_candidates]
     entities.extend({"name": item, "kind": "concept", "score": 5.0} for item in domain_nodes)
@@ -103,6 +104,9 @@ def normalize_chatlasso_file(source: Path, source_id: int, root: Path, embedder:
         "source_id": source_id,
         "markdown_path": str(markdown_path),
         "tags": tags,
+        "source_kind": "chatlasso",
+        "project": metadata.get("project") or infer_project(metadata),
+        "identity": metadata.get("identity") or infer_identity(metadata),
         "messages": [
             {
                 "id": f"{cid}:payload",
@@ -137,12 +141,98 @@ def parse_frontmatter(frontmatter: str) -> dict[str, str]:
     return metadata
 
 
+def normalize_ssi_metadata(metadata: dict[str, str], body: str, source: Path) -> dict[str, Any]:
+    normalized: dict[str, Any] = dict(metadata)
+    normalized["domain_nodes"] = parse_list_value(metadata.get("domain_nodes", ""))
+    normalized["audit_pass_status"] = parse_audit_status(body, metadata.get("audit_pass_status"))
+    normalized["regression_contradictions_found"] = parse_bool(
+        metadata.get("regression_contradictions_found")
+        or metadata.get("contradictions_found")
+        or infer_regression_flag(body)
+    )
+    normalized["regression_details"] = parse_list_value(metadata.get("regression_details", "")) or parse_regression_details(body)
+    normalized["source_path"] = str(source.resolve())
+    normalized["source_hash"] = sha256(source)
+    return normalized
+
+
 def parse_list_value(value: str) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
     value = value.strip()
     if not value.startswith("[") or not value.endswith("]"):
         return []
     inner = value[1:-1]
     return [item.strip().strip('"').strip("'") for item in inner.split(",") if item.strip()]
+
+
+def ensure_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str):
+        return parse_list_value(value)
+    return []
+
+
+def parse_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    lowered = str(value or "").strip().lower()
+    return lowered in {"1", "true", "yes", "y", "warn", "warning", "fail", "failed"}
+
+
+def parse_audit_status(body: str, value: str | None = None) -> bool | None:
+    if value:
+        lowered = value.strip().lower()
+        if lowered in {"true", "yes", "pass", "passed", "1"}:
+            return True
+        if lowered in {"false", "no", "fail", "failed", "warn", "warning", "0"}:
+            return False
+    match = re.search(r"Audit Pass Status:\s*(.+)", body, re.IGNORECASE)
+    if not match:
+        return None
+    rendered = match.group(1).strip().lower()
+    if "pass" in rendered and "fail" not in rendered and "warn" not in rendered:
+        return True
+    if "fail" in rendered or "warn" in rendered:
+        return False
+    return None
+
+
+def infer_regression_flag(body: str) -> str:
+    lowered = body.lower()
+    if any(term in lowered for term in ("contradiction", "regression", "logic drift", "overturned")):
+        return "true"
+    return "false"
+
+
+def parse_regression_details(body: str) -> list[str]:
+    details = []
+    capture = False
+    for line in body.splitlines():
+        stripped = line.strip()
+        if re.match(r"#{1,3}\s+.*(regression|contradiction)", stripped, re.IGNORECASE):
+            capture = True
+            continue
+        if capture and stripped.startswith("#"):
+            break
+        if capture and stripped.startswith("- "):
+            details.append(stripped[2:].strip())
+    return details
+
+
+def infer_project(metadata: dict[str, Any]) -> str:
+    nodes = {str(item).lower() for item in metadata.get("domain_nodes", [])}
+    if "chatlasso" in nodes:
+        return "ChatLasso"
+    return "ERMI"
+
+
+def infer_identity(metadata: dict[str, Any]) -> str:
+    archetype = str(metadata.get("archetype") or "").lower()
+    if "jusstin" in archetype or "deetorch" in archetype:
+        return "Jusstin/DeeTorch"
+    return "KnightBot"
 
 
 def metadata_tags(metadata: dict[str, str]) -> set[str]:

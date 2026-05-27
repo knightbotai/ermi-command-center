@@ -2,7 +2,7 @@
 
 Externalized Recursive Memory Infrastructure, built as a local-first MVP.
 
-This implementation ingests ChatGPT-style `conversations.json` exports, preserves raw source data, creates an Obsidian-compatible Markdown vault, indexes conversations/messages/chunks/entities in SQLite, generates embeddings, supports semantic search, and exports a lightweight graph.
+This implementation ingests ChatGPT-style `conversations.json` exports and ChatLasso SSI Markdown, preserves raw source data, creates an Obsidian-compatible Markdown vault, indexes conversations/messages/chunks/entities/SSI metadata in SQLite, generates embeddings, supports hybrid search, surfaces regression flags, and exports a lightweight graph.
 
 ## Project
 
@@ -16,9 +16,13 @@ Canonical project aliases live in [docs/ALIASES.md](docs/ALIASES.md).
 python -m ermi init
 python -m ermi ingest C:\path\to\conversations.json
 python -m ermi import-chatlasso C:\path\to\Obsidian\10_Data_Harvest\11_SSI_Raw
+python -m ermi watch-chatlasso C:\path\to\Obsidian\10_Data_Harvest\11_SSI_Raw --once
 python -m ermi search "recursive memory architecture"
+python -m ermi flags
+python -m ermi timeline
 python -m ermi entities
 python -m ermi graph
+python -m ermi backup
 ```
 
 ## Command Center UI
@@ -36,9 +40,9 @@ Then open:
 http://127.0.0.1:5173
 ```
 
-The UI provides a local command center for ingesting exports, semantic recall, entity inspection, graph export, archive counts, and operations logs.
+The UI provides a local command center for ingesting exports, watched ChatLasso folders, hybrid recall, entity inspection, regression flags, import review, concept timeline, graph export, backups, archive counts, and operations logs.
 
-The ingest panel supports both raw ChatGPT exports and ChatLasso SSI Markdown output, making ChatLasso the capture/synthesis layer and ERMI the durable recall/index layer. ChatLasso can also POST SSI Markdown directly to ERMI at `http://127.0.0.1:8765/api/import/chatlasso-payload`.
+The ingest panel supports both raw ChatGPT exports and ChatLasso SSI Markdown output, making ChatLasso the capture/synthesis layer and ERMI the durable recall/index layer. ChatLasso can also POST SSI Markdown directly to ERMI at `http://127.0.0.1:8765/api/import/chatlasso-payload`. ERMI preserves ChatLasso `mode`, `archetype`, `status`, `hash_beacon`, `loss_report`, audit state, regression flags, and domain nodes as structured metadata.
 
 ## Windows Desktop Installer
 
@@ -59,6 +63,7 @@ The installer checks core prerequisites, installs ERMI dependencies, initializes
 git pull
 npm install
 python -m pip install -e ".[dev,ml]"
+python -m ermi --root archive migrate
 npm run api
 npm run dev:ui
 ```
@@ -76,6 +81,8 @@ archive/
     conversations/
   ermi.sqlite3
   graph.json
+  watchers.json
+  backups/
 ```
 
 ## Optional ML Embeddings
@@ -93,6 +100,8 @@ Then re-run ingestion so chunk embeddings are regenerated with `sentence-transfo
 - Raw source files are copied, never overwritten.
 - Markdown and database rows are derived artifacts and can be rebuilt.
 - Chunk embeddings are stored in SQLite for a simple local MVP.
-- ChatLasso SSI payloads are imported as first-class memory artifacts.
+- ChatLasso SSI payloads are imported as first-class memory artifacts with schema-versioned metadata.
+- Hybrid search uses local embeddings plus SQLite FTS5, so exact phrases and semantic matches both matter.
+- Flagged imports enter the review queue; clean imports are accepted automatically.
 - Entity extraction is deliberately conservative and local. It can be replaced later with an LLM or NLP pipeline.
 - The graph export is JSON for portability; NetworkX, Neo4j, or RDF can be layered on later.

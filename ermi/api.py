@@ -9,10 +9,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .chatlasso import import_chatlasso, import_chatlasso_payload
+from .flags import list_flags
 from .graph import export_graph
 from .ingest import ingest_export, init_archive
+from .ops import backup_archive, restore_archive
+from .review import list_import_reviews, set_import_review_status
 from .search import search
-from .storage import Store
+from .storage import LATEST_SCHEMA_VERSION, Store
+from .timeline import concept_timeline
+from .watch import add_watcher, load_watchers, scan_chatlasso_watchers
 
 
 class IngestRequest(BaseModel):
@@ -26,6 +31,14 @@ class ImportRequest(BaseModel):
 class ChatLassoPayloadRequest(BaseModel):
     title: str = "ChatLasso SSI"
     content: str
+
+
+class WatchRequest(BaseModel):
+    source: str
+
+
+class RestoreRequest(BaseModel):
+    source: str
 
 
 def create_app(default_root: Path | None = None) -> FastAPI:
@@ -65,14 +78,37 @@ def create_app(default_root: Path | None = None) -> FastAPI:
             "healthy": True,
             "counts": counts,
             "lastIngest": dict(last_source) if last_source else None,
+            "watchers": load_watchers(root),
         }
+
+    @app.get("/api/schema")
+    def schema() -> dict[str, object]:
+        init_archive(root)
+        with Store(root / "ermi.sqlite3") as store:
+            return {"current": store.schema_version(), "latest": LATEST_SCHEMA_VERSION}
 
     @app.get("/api/search")
     def semantic_search(
         q: Annotated[str, Query(min_length=1)],
         limit: Annotated[int, Query(ge=1, le=25)] = 8,
+        mode: str | None = None,
+        status: str | None = None,
+        archetype: str | None = None,
+        regression: bool | None = None,
+        audit_pass: bool | None = None,
+        project: str | None = None,
+        identity: str | None = None,
     ) -> dict[str, object]:
-        return {"query": q, "results": search(root, q, limit)}
+        filters = {
+            "mode": mode,
+            "status": status,
+            "archetype": archetype,
+            "regression": regression,
+            "audit_pass": audit_pass,
+            "project": project,
+            "identity": identity,
+        }
+        return {"query": q, "filters": filters, "results": search(root, q, limit, filters)}
 
     @app.post("/api/ingest")
     def ingest(request: IngestRequest) -> dict[str, object]:
@@ -103,6 +139,25 @@ def create_app(default_root: Path | None = None) -> FastAPI:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.get("/api/watchers")
+    def watchers() -> dict[str, object]:
+        return {"chatlasso": load_watchers(root)}
+
+    @app.post("/api/watchers/chatlasso")
+    def add_chatlasso_watcher(request: WatchRequest) -> dict[str, object]:
+        source = Path(request.source).expanduser().resolve()
+        try:
+            return {"chatlasso": add_watcher(root, source)}
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/watchers/chatlasso/scan")
+    def scan_chatlasso() -> dict[str, object]:
+        try:
+            return {"stats": scan_chatlasso_watchers(root), "chatlasso": load_watchers(root)}
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.get("/api/entities")
     def entities(limit: Annotated[int, Query(ge=1, le=200)] = 50) -> dict[str, object]:
         init_archive(root)
@@ -118,6 +173,44 @@ def create_app(default_root: Path | None = None) -> FastAPI:
         init_archive(root)
         path = export_graph(root)
         return json.loads(path.read_text(encoding="utf-8"))
+
+    @app.get("/api/flags")
+    def flags(limit: Annotated[int, Query(ge=1, le=200)] = 50) -> dict[str, object]:
+        return {"flags": list_flags(root, limit)}
+
+    @app.get("/api/timeline")
+    def timeline(limit: Annotated[int, Query(ge=1, le=300)] = 100) -> dict[str, object]:
+        return {"events": concept_timeline(root, limit)}
+
+    @app.get("/api/review/imports")
+    def review_imports() -> dict[str, object]:
+        return {"imports": list_import_reviews(root)}
+
+    @app.post("/api/review/imports/{conversation_id}/accept")
+    def accept_import(conversation_id: str) -> dict[str, object]:
+        try:
+            return set_import_review_status(root, conversation_id, "accepted")
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=f"Import not found: {conversation_id}") from exc
+
+    @app.post("/api/review/imports/{conversation_id}/reject")
+    def reject_import(conversation_id: str) -> dict[str, object]:
+        try:
+            return set_import_review_status(root, conversation_id, "rejected")
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=f"Import not found: {conversation_id}") from exc
+
+    @app.post("/api/backup")
+    def backup() -> dict[str, object]:
+        return {"path": str(backup_archive(root))}
+
+    @app.post("/api/restore")
+    def restore(request: RestoreRequest) -> dict[str, object]:
+        source = Path(request.source).expanduser().resolve()
+        try:
+            return {"path": str(restore_archive(root, source))}
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=f"Backup not found: {source}") from exc
 
     @app.post("/api/graph/export")
     def graph_export() -> dict[str, object]:
