@@ -38,7 +38,7 @@ http://127.0.0.1:5173
 
 The UI provides a local command center for ingesting exports, semantic recall, entity inspection, graph export, archive counts, and operations logs.
 
-The ingest panel supports both raw ChatGPT exports and ChatLasso SSI Markdown output, making ChatLasso the capture/synthesis layer and ERMI the durable recall/index layer.
+The ingest panel supports both raw ChatGPT exports and ChatLasso SSI Markdown output, making ChatLasso the capture/synthesis layer and ERMI the durable recall/index layer. ChatLasso can also POST SSI Markdown directly to ERMI at `http://127.0.0.1:8765/api/import/chatlasso-payload`.
 
 ## Windows Desktop Installer
 

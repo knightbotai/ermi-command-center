@@ -64,9 +64,19 @@ python -m ermi import-chatlasso C:\path\to\example_SSI.md
 
 ## Next Seamless Step
 
-The next bridge should let ChatLasso call ERMI directly after SSI export, removing the manual path paste:
+ChatLasso can call ERMI directly after SSI export, removing the manual path paste:
 
 ```text
-ChatLasso Export Vector -> POST http://127.0.0.1:8765/api/import/chatlasso
+ChatLasso Send to ERMI -> POST http://127.0.0.1:8765/api/import/chatlasso-payload
 ```
 
+The payload shape is:
+
+```json
+{
+  "title": "SSI title",
+  "content": "full SSI Markdown"
+}
+```
+
+ERMI preserves that payload under `archive/raw/chatlasso_payloads` and indexes it as a ChatLasso memory.

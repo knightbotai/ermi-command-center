@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from ermi.chatlasso import import_chatlasso
+from ermi.chatlasso import import_chatlasso, import_chatlasso_payload
 from ermi.ingest import ingest_export
 from ermi.search import search
 
@@ -98,3 +98,27 @@ hash_beacon: "abc123"
     assert list((root / "vault" / "chatlasso" / "2026").glob("*.md"))
     result = search(root, "live LLM conversations durable memory", 1)[0]
     assert result["chunk_id"].startswith("chatlasso_")
+
+
+def test_import_chatlasso_payload(tmp_path: Path) -> None:
+    root = tmp_path / "archive"
+    stats = import_chatlasso_payload(
+        "Direct ERMI Payload",
+        """---
+type: chat_extracted_ssi
+mode: Direct Bridge
+domain_nodes: ["ChatLasso", "ERMI"]
+date_extracted: 2026-05-27T16:00:00+00:00
+---
+
+# Direct ERMI Payload
+
+## Architectural Commits
+ChatLasso can send SSI Markdown directly into ERMI without a filesystem path.
+""",
+        root,
+    )
+
+    assert stats["conversations"] == 1
+    assert list((root / "raw" / "chatlasso_payloads").glob("*.md"))
+    assert search(root, "without a filesystem path", 1)[0]["chunk_id"].startswith("chatlasso_")

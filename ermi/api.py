@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from .chatlasso import import_chatlasso
+from .chatlasso import import_chatlasso, import_chatlasso_payload
 from .graph import export_graph
 from .ingest import ingest_export, init_archive
 from .search import search
@@ -23,13 +23,23 @@ class ImportRequest(BaseModel):
     source: str
 
 
+class ChatLassoPayloadRequest(BaseModel):
+    title: str = "ChatLasso SSI"
+    content: str
+
+
 def create_app(default_root: Path | None = None) -> FastAPI:
     app = FastAPI(title="ERMI Command Center API")
     root = (default_root or Path("archive")).resolve()
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+        allow_origins=[
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -81,6 +91,15 @@ def create_app(default_root: Path | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail=f"Source not found: {source}")
         try:
             return {"source": str(source), "stats": import_chatlasso(source, root)}
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/import/chatlasso-payload")
+    def import_chatlasso_payload_endpoint(request: ChatLassoPayloadRequest) -> dict[str, object]:
+        if not request.content.strip():
+            raise HTTPException(status_code=400, detail="Content is required.")
+        try:
+            return {"source": "payload", "stats": import_chatlasso_payload(request.title, request.content, root)}
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

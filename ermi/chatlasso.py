@@ -40,6 +40,18 @@ def import_chatlasso(source: Path, root: Path) -> dict[str, int]:
     }
 
 
+def import_chatlasso_payload(title: str, content: str, root: Path) -> dict[str, int]:
+    init_archive(root)
+    safe_title = clean_title(title or first_heading(split_frontmatter(content)[1]) or "ChatLasso SSI")
+    payload_dir = root / "raw" / "chatlasso_payloads"
+    payload_dir.mkdir(parents=True, exist_ok=True)
+    digest = sha256_text(content)[:12]
+    source = payload_dir / f"{safe_slug(safe_title)}-{digest}.md"
+    if not source.exists():
+        source.write_text(content, encoding="utf-8")
+    return import_chatlasso(source, root)
+
+
 def discover_markdown(source: Path) -> list[Path]:
     if source.is_file():
         return [source] if source.suffix.lower() in {".md", ".markdown"} else []
@@ -59,6 +71,12 @@ def copy_chatlasso_source(source: Path, raw_dir: Path) -> Path:
     if not target.exists():
         shutil.copy2(source, target)
     return target
+
+
+def sha256_text(value: str) -> str:
+    import hashlib
+
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
 def normalize_chatlasso_file(source: Path, source_id: int, root: Path, embedder: Any) -> dict[str, Any]:
@@ -222,4 +240,3 @@ def year_from_iso(value: str | None) -> str:
     if value and len(value) >= 4 and value[:4].isdigit():
         return value[:4]
     return "undated"
-
