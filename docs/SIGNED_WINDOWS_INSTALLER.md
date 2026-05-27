@@ -32,7 +32,7 @@ Optional signing requirements:
 Install Windows SDK signing tools when you want `-Sign` or `-DevSelfSign`:
 
 ```powershell
-winget install --id Microsoft.WindowsSDK --exact
+winget install --id Microsoft.WindowsSDK.10.0.18362 --exact
 ```
 
 ## Build Unsigned Installer
@@ -106,6 +106,8 @@ Trusted Publishers
 ```
 
 Only do this on machines you control. This is useful for rehearsing the signed-installer workflow; it is not public distribution trust.
+
+Until the dev certificate is trusted on the target machine, Windows will show the signature chain as untrusted even though the installer file is signed. That is expected for internal self-signing.
 
 ## Checksums
 

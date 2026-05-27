@@ -12,6 +12,7 @@ All notable changes to ERMI Command Center will be documented here.
 - Certificate-store thumbprint signing support for Windows code-signing certificates.
 - Internal dev self-signing mode with public certificate export for controlled test machines.
 - SHA-256 checksum generation for installer release artifacts.
+- Verified Windows SDK signing tools and internal dev-signed installer generation on the local build machine.
 - Signed Windows installer walkthrough documentation.
 - Root-level `START-HERE.cmd` for one-click post-clone setup, diagnostics, shortcut creation, launch, and browser open.
 - DeeTorch post-clone setup guide with one-click usage and optional GitHub remote handoff notes.
