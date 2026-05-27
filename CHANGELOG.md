@@ -14,6 +14,8 @@ All notable changes to ERMI Command Center will be documented here.
 - SHA-256 checksum generation for installer release artifacts.
 - Verified Windows SDK signing tools and internal dev-signed installer generation on the local build machine.
 - Signed Windows installer walkthrough documentation.
+- Android/Termux install and launch scripts for mobile local MVP use.
+- Capacitor Android project and build script for a sideload APK UI shell that connects to the local Termux backend.
 - Root-level `START-HERE.cmd` for one-click post-clone setup, diagnostics, shortcut creation, launch, and browser open.
 - DeeTorch post-clone setup guide with one-click usage and optional GitHub remote handoff notes.
 - MVP handoff guide with install, setup, sample-data, daily-use, update, and recovery notes.

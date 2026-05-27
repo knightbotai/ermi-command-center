@@ -22,6 +22,8 @@ That runs the one-click installer, diagnostics, desktop shortcut setup, and app 
 
 To build a Windows setup wizard executable, see [docs/SIGNED_WINDOWS_INSTALLER.md](docs/SIGNED_WINDOWS_INSTALLER.md).
 
+For Android/Termux mobile use and sideload APK builds, see [docs/ANDROID_TERMUX.md](docs/ANDROID_TERMUX.md).
+
 Manual CLI flow:
 
 ```powershell
@@ -87,7 +89,7 @@ npm run api
 npm run dev:ui
 ```
 
-See [docs/MVP_HANDOFF.md](docs/MVP_HANDOFF.md), [docs/DEE_TORCH_POST_CLONE.md](docs/DEE_TORCH_POST_CLONE.md), [docs/SIGNED_WINDOWS_INSTALLER.md](docs/SIGNED_WINDOWS_INSTALLER.md), [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md), [docs/INSTALLER.md](docs/INSTALLER.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), and [CHANGELOG.md](CHANGELOG.md) for ongoing project notes.
+See [docs/MVP_HANDOFF.md](docs/MVP_HANDOFF.md), [docs/DEE_TORCH_POST_CLONE.md](docs/DEE_TORCH_POST_CLONE.md), [docs/SIGNED_WINDOWS_INSTALLER.md](docs/SIGNED_WINDOWS_INSTALLER.md), [docs/ANDROID_TERMUX.md](docs/ANDROID_TERMUX.md), [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md), [docs/INSTALLER.md](docs/INSTALLER.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), and [CHANGELOG.md](CHANGELOG.md) for ongoing project notes.
 
 See [docs/CHATLASSO_INTEGRATION.md](docs/CHATLASSO_INTEGRATION.md) for the joined ChatLasso -> ERMI workflow.
 

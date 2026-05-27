@@ -33,6 +33,9 @@ const navItems = [
   ["Vault", Archive],
 ];
 
+const apiBase = (import.meta.env.VITE_ERMI_API_BASE || "").replace(/\/$/, "");
+const apiUrl = (path) => `${apiBase}${path}`;
+
 function App() {
   const [status, setStatus] = useState(null);
   const [entities, setEntities] = useState([]);
@@ -59,16 +62,16 @@ function App() {
 
   async function refreshAll() {
     const [statusRes, entityRes, graphRes, watcherRes, schemaRes, flagsRes, timelineRes, reviewRes, setupRes, diagnosticsRes] = await Promise.all([
-      fetch("/api/status"),
-      fetch("/api/entities?limit=12"),
-      fetch("/api/graph"),
-      fetch("/api/watchers"),
-      fetch("/api/schema"),
-      fetch("/api/flags?limit=20"),
-      fetch("/api/timeline?limit=40"),
-      fetch("/api/review/imports"),
-      fetch("/api/setup"),
-      fetch("/api/diagnostics"),
+      fetch(apiUrl("/api/status")),
+      fetch(apiUrl("/api/entities?limit=12")),
+      fetch(apiUrl("/api/graph")),
+      fetch(apiUrl("/api/watchers")),
+      fetch(apiUrl("/api/schema")),
+      fetch(apiUrl("/api/flags?limit=20")),
+      fetch(apiUrl("/api/timeline?limit=40")),
+      fetch(apiUrl("/api/review/imports")),
+      fetch(apiUrl("/api/setup")),
+      fetch(apiUrl("/api/diagnostics")),
     ]);
     const nextStatus = await statusRes.json();
     setStatus(nextStatus);
@@ -92,7 +95,7 @@ function App() {
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.set(key, String(value));
       });
-      const res = await fetch(`/api/search?${params.toString()}`);
+      const res = await fetch(apiUrl(`/api/search?${params.toString()}`));
       const data = await res.json();
       setResults(data.results || []);
       addLog("Recall", `${data.results?.length || 0} results for "${query}"`, "Success");
@@ -107,7 +110,7 @@ function App() {
     setBusy(true);
     try {
       const endpoint = sourceType === "chatlasso" ? "/api/import/chatlasso" : "/api/ingest";
-      const res = await fetch(endpoint, {
+      const res = await fetch(apiUrl(endpoint), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ source }),
@@ -125,14 +128,14 @@ function App() {
   }
 
   async function exportGraph() {
-    const res = await fetch("/api/graph/export", { method: "POST" });
+    const res = await fetch(apiUrl("/api/graph/export"), { method: "POST" });
     const data = await res.json();
     addLog("Graph", `Exported ${data.path}`, "Success");
     await refreshAll();
   }
 
   async function createBackup() {
-    const res = await fetch("/api/backup", { method: "POST" });
+    const res = await fetch(apiUrl("/api/backup"), { method: "POST" });
     const data = await res.json();
     addLog("Backup", data.path || "Backup created", res.ok ? "Success" : "Warning");
   }
@@ -141,7 +144,7 @@ function App() {
     event?.preventDefault();
     setBusy(true);
     try {
-      const res = await fetch("/api/setup", {
+      const res = await fetch(apiUrl("/api/setup"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(setupConfig),
@@ -160,7 +163,7 @@ function App() {
   async function runFirstSetup() {
     setBusy(true);
     try {
-      const res = await fetch("/api/setup/run", {
+      const res = await fetch(apiUrl("/api/setup/run"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(setupConfig),
@@ -178,14 +181,14 @@ function App() {
   }
 
   async function runDiagnostics() {
-    const res = await fetch("/api/diagnostics");
+    const res = await fetch(apiUrl("/api/diagnostics"));
     const data = await res.json();
     setDiagnostics(data);
     addLog("Diagnostics", data.healthy ? "All checks passed" : "One or more checks need attention", data.healthy ? "Success" : "Warning");
   }
 
   async function openFolder(name) {
-    const res = await fetch("/api/open-folder", {
+    const res = await fetch(apiUrl("/api/open-folder"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
@@ -195,7 +198,7 @@ function App() {
   }
 
   async function reviewImport(id, action) {
-    const res = await fetch(`/api/review/imports/${encodeURIComponent(id)}/${action}`, { method: "POST" });
+    const res = await fetch(apiUrl(`/api/review/imports/${encodeURIComponent(id)}/${action}`), { method: "POST" });
     const data = await res.json();
     addLog("Review", `${action}: ${data.conversation_id || id}`, res.ok ? "Success" : "Warning");
     await refreshAll();
@@ -206,7 +209,7 @@ function App() {
     if (!watchSource.trim()) return;
     setBusy(true);
     try {
-      const res = await fetch("/api/watchers/chatlasso", {
+      const res = await fetch(apiUrl("/api/watchers/chatlasso"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ source: watchSource }),
@@ -226,7 +229,7 @@ function App() {
   async function scanWatchFolders() {
     setBusy(true);
     try {
-      const res = await fetch("/api/watchers/chatlasso/scan", { method: "POST" });
+      const res = await fetch(apiUrl("/api/watchers/chatlasso/scan"), { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Watch scan failed");
       setWatchers(data.chatlasso || []);

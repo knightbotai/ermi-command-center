@@ -19,3 +19,8 @@ installer/output/
 *.log
 tmp_*/
 *.sqlite3
+
+android/.gradle/
+android/local.properties
+android/app/build/
+android/build/
