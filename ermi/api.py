@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .chatlasso import import_chatlasso, import_chatlasso_payload
+from .diagnostics import run_diagnostics
 from .exports import activity_summary, export_chat_csv, export_obsidian_second_brain, list_chat_titles, mine_code_blocks
 from .flags import list_flags
 from .graph import export_graph
@@ -16,6 +17,7 @@ from .ingest import ingest_export, init_archive
 from .ops import backup_archive, restore_archive
 from .review import list_import_reviews, set_import_review_status
 from .search import search
+from .setup import load_setup, run_first_setup, save_setup
 from .storage import LATEST_SCHEMA_VERSION, Store
 from .timeline import concept_timeline
 from .watch import add_watcher, load_watchers, scan_chatlasso_watchers
@@ -45,6 +47,11 @@ class RestoreRequest(BaseModel):
 class ExportRequest(BaseModel):
     source: str
     target: str | None = None
+
+
+class SetupRequest(BaseModel):
+    chatgpt_source: str = ""
+    chatlasso_source: str = ""
 
 
 def create_app(default_root: Path | None = None) -> FastAPI:
@@ -92,6 +99,27 @@ def create_app(default_root: Path | None = None) -> FastAPI:
         init_archive(root)
         with Store(root / "ermi.sqlite3") as store:
             return {"current": store.schema_version(), "latest": LATEST_SCHEMA_VERSION}
+
+    @app.get("/api/setup")
+    def setup_config() -> dict[str, object]:
+        return {"config": load_setup(root)}
+
+    @app.post("/api/setup")
+    def save_setup_config(request: SetupRequest) -> dict[str, object]:
+        return {"config": save_setup(root, request.model_dump())}
+
+    @app.post("/api/setup/run")
+    def run_setup_config(request: SetupRequest) -> dict[str, object]:
+        try:
+            return run_first_setup(root, request.model_dump())
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/diagnostics")
+    def diagnostics() -> dict[str, object]:
+        return run_diagnostics(root)
 
     @app.get("/api/search")
     def semantic_search(

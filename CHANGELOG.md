@@ -6,6 +6,10 @@ All notable changes to ERMI Command Center will be documented here.
 
 ### Added
 
+- First-run setup profile for saving ChatGPT export and ChatLasso SSI folder paths.
+- One-click setup runner that performs initial ChatGPT ingest, ChatLasso import, watcher registration, and scan.
+- MVP health diagnostics for Python, Node, npm, SQLite, schema, archive writes, watch folders, backups, and Git remote.
+- Command center setup and diagnostics panels.
 - True-path ChatGPT export reconstruction using `current_node`, preventing abandoned regenerated branches from entering the archive.
 - ChatGPT export utility commands for title health checks, CSV export, assistant code-block mining, activity summaries, and categorized Obsidian-ready Markdown export.
 - API endpoints for ChatGPT CSV/code/Obsidian exports, title listing, and activity summaries.

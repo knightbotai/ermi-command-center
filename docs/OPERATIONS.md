@@ -27,6 +27,43 @@ Default URLs:
 - UI: `http://127.0.0.1:5173`
 - API: `http://127.0.0.1:8765`
 
+## MVP First-Run Setup
+
+In the command center, fill in `First-Run Setup`:
+
+- `ChatGPT Export`: path to `conversations.json`
+- `ChatLasso SSI Folder`: path to `10_Data_Harvest\11_SSI_Raw`
+
+Then click `Run First Setup`. ERMI saves the paths, ingests the ChatGPT export, imports the ChatLasso folder, registers it as a watched folder, scans once, and refreshes the dashboard.
+
+CLI equivalent:
+
+```powershell
+python -m ermi --root archive setup --chatgpt-source C:\path\to\conversations.json --chatlasso-source C:\path\to\10_Data_Harvest\11_SSI_Raw --run
+```
+
+Saved setup lives at:
+
+```text
+archive\setup.json
+```
+
+## Health Diagnostics
+
+UI:
+
+```text
+Quick Actions -> Run Diagnostics
+```
+
+CLI:
+
+```powershell
+python -m ermi --root archive diagnostics
+```
+
+Diagnostics check Python, Node, npm, SQLite, archive writability, schema version, watched folders, backups, and Git remote.
+
 ## Verification
 
 ```powershell

@@ -14,6 +14,8 @@ Canonical project aliases live in [docs/ALIASES.md](docs/ALIASES.md).
 
 ```powershell
 python -m ermi init
+python -m ermi setup --chatgpt-source C:\path\to\conversations.json --chatlasso-source C:\path\to\Obsidian\10_Data_Harvest\11_SSI_Raw --run
+python -m ermi diagnostics
 python -m ermi chatgpt-titles C:\path\to\conversations.json
 python -m ermi ingest C:\path\to\conversations.json
 python -m ermi export-chatgpt-csv C:\path\to\conversations.json
@@ -45,7 +47,7 @@ Then open:
 http://127.0.0.1:5173
 ```
 
-The UI provides a local command center for ingesting exports, watched ChatLasso folders, hybrid recall, entity inspection, regression flags, import review, concept timeline, graph export, backups, archive counts, and operations logs.
+The UI provides a local command center for first-run setup, health diagnostics, ingesting exports, watched ChatLasso folders, hybrid recall, entity inspection, regression flags, import review, concept timeline, graph export, backups, archive counts, and operations logs.
 
 The ingest panel supports both raw ChatGPT exports and ChatLasso SSI Markdown output, making ChatLasso the capture/synthesis layer and ERMI the durable recall/index layer. ChatGPT imports follow the export's `current_node` path, so regenerated/abandoned branches stay out of the main archive. ChatLasso can also POST SSI Markdown directly to ERMI at `http://127.0.0.1:8765/api/import/chatlasso-payload`. ERMI preserves ChatLasso `mode`, `archetype`, `status`, `hash_beacon`, `loss_report`, audit state, regression flags, and domain nodes as structured metadata.
 
@@ -81,6 +83,7 @@ By default ERMI writes to:
 
 ```text
 archive/
+  setup.json
   raw/
   vault/
     conversations/

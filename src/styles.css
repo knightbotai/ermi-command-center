@@ -402,6 +402,44 @@ main {
   gap: 10px;
 }
 
+.setup-box {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.setup-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.setup-fields label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.setup-fields input {
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #071116;
+  color: var(--text);
+  padding: 0 11px;
+  text-transform: none;
+  font-weight: 400;
+}
+
+.setup-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .ingest-mode {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -675,6 +713,40 @@ td {
   justify-content: flex-start;
 }
 
+.diagnostic-list {
+  display: grid;
+}
+
+.diagnostic-row {
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: 22px 110px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.diagnostic-row.ok svg {
+  color: var(--green);
+}
+
+.diagnostic-row.bad svg {
+  color: var(--danger);
+}
+
+.diagnostic-row strong,
+.diagnostic-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diagnostic-row span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 @media (max-width: 900px) {
   body {
     min-width: 0;
@@ -699,7 +771,9 @@ td {
   .topbar,
   .workspace,
   .lower-grid,
-  .ops-grid {
+  .ops-grid,
+  .setup-fields,
+  .setup-actions {
     grid-template-columns: 1fr;
   }
 

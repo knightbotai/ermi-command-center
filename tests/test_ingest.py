@@ -14,6 +14,7 @@ from ermi.ingest import ingest_export, reconstruct_messages
 from ermi.ops import backup_archive, restore_archive
 from ermi.review import list_import_reviews, set_import_review_status
 from ermi.search import search
+from ermi.setup import load_setup, run_first_setup
 from ermi.storage import LATEST_SCHEMA_VERSION, Store
 from ermi.timeline import concept_timeline
 from ermi.watch import add_watcher, scan_chatlasso_watchers
@@ -345,3 +346,73 @@ Jusstin and ERMI need a review queue.
     assert client.get("/api/timeline").json()["events"]
     assert "flags" in client.get("/api/flags").json()
     assert client.get("/api/review/imports").json()["imports"]
+
+
+def test_first_run_setup_and_diagnostics_api(tmp_path: Path) -> None:
+    source = tmp_path / "conversations.json"
+    source.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "setup_conv",
+                    "title": "Setup Memory",
+                    "create_time": 1779894000,
+                    "current_node": "m2",
+                    "mapping": {
+                        "root": {"parent": None, "message": None},
+                        "m1": {
+                            "parent": "root",
+                            "message": {
+                                "id": "m1",
+                                "author": {"role": "user"},
+                                "create_time": 1779894000,
+                                "content": {"parts": ["Set up ERMI."]},
+                            },
+                        },
+                        "m2": {
+                            "parent": "m1",
+                            "message": {
+                                "id": "m2",
+                                "author": {"role": "assistant"},
+                                "create_time": 1779897600,
+                                "content": {"parts": ["ERMI setup is complete."]},
+                            },
+                        },
+                    },
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    ssi_dir = tmp_path / "ssi"
+    ssi_dir.mkdir()
+    (ssi_dir / "setup_ssi.md").write_text(
+        """---
+type: chat_extracted_ssi
+mode: Setup
+domain_nodes: ["ERMI"]
+date_extracted: 2026-05-27T20:00:00+00:00
+hash_beacon: "setup"
+---
+
+# Setup SSI
+
+## Cognitive DNA
+Setup should be boring and reliable.
+""",
+        encoding="utf-8",
+    )
+
+    root = tmp_path / "archive"
+    result = run_first_setup(root, {"chatgpt_source": str(source), "chatlasso_source": str(ssi_dir)})
+
+    assert result["stats"]["chatgpt"]["conversations"] == 1
+    assert result["stats"]["chatlasso"]["conversations"] == 1
+    assert load_setup(root)["completed_at"]
+
+    client = TestClient(create_app(root))
+    setup_response = client.get("/api/setup").json()
+    assert setup_response["config"]["chatgpt_source"] == str(source)
+    diagnostics = client.get("/api/diagnostics").json()
+    assert diagnostics["healthy"] is True
+    assert {item["name"] for item in diagnostics["checks"]} >= {"Python", "SQLite", "Schema", "Archive writable"}

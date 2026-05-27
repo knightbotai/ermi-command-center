@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from .chatlasso import import_chatlasso
+from .diagnostics import run_diagnostics
 from .exports import activity_summary, export_chat_csv, export_obsidian_second_brain, list_chat_titles, mine_code_blocks
 from .flags import list_flags
 from .graph import export_graph
@@ -11,6 +12,7 @@ from .ingest import ingest_export, init_archive
 from .ops import backup_archive, restore_archive
 from .review import list_import_reviews, set_import_review_status
 from .search import search
+from .setup import run_first_setup, save_setup
 from .storage import LATEST_SCHEMA_VERSION, Store
 from .timeline import concept_timeline
 from .watch import add_watcher, load_watchers, scan_chatlasso_watchers, watch_chatlasso
@@ -25,6 +27,13 @@ def main(argv: list[str] | None = None) -> int:
 
     ingest_parser = subparsers.add_parser("ingest", help="Ingest ChatGPT conversations.json.")
     ingest_parser.add_argument("source", type=Path)
+
+    setup_parser = subparsers.add_parser("setup", help="Save or run first-run setup paths.")
+    setup_parser.add_argument("--chatgpt-source", default="")
+    setup_parser.add_argument("--chatlasso-source", default="")
+    setup_parser.add_argument("--run", action="store_true")
+
+    subparsers.add_parser("diagnostics", help="Run ERMI MVP health diagnostics.")
 
     titles_parser = subparsers.add_parser("chatgpt-titles", help="List titles in a ChatGPT conversations.json export.")
     titles_parser.add_argument("source", type=Path)
@@ -93,6 +102,17 @@ def main(argv: list[str] | None = None) -> int:
         print("Ingest complete")
         for key, value in stats.items():
             print(f"{key}: {value}")
+        return 0
+    if args.command == "setup":
+        config = {
+            "chatgpt_source": args.chatgpt_source,
+            "chatlasso_source": args.chatlasso_source,
+        }
+        result = run_first_setup(root, config) if args.run else {"config": save_setup(root, config)}
+        print(json_dump(result))
+        return 0
+    if args.command == "diagnostics":
+        print(json_dump(run_diagnostics(root)))
         return 0
     if args.command == "chatgpt-titles":
         for title in list_chat_titles(args.source.resolve()):
@@ -202,6 +222,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Restored archive at {restore_archive(root, args.source.resolve())}")
         return 0
     return 1
+
+
+def json_dump(value: object) -> str:
+    import json
+
+    return json.dumps(value, indent=2)
 
 
 if __name__ == "__main__":

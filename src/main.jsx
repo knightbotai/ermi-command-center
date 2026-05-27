@@ -46,6 +46,8 @@ function App() {
   const [flags, setFlags] = useState([]);
   const [timeline, setTimeline] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [setupConfig, setSetupConfig] = useState({ chatgpt_source: "", chatlasso_source: "" });
+  const [diagnostics, setDiagnostics] = useState(null);
   const [filters, setFilters] = useState({ mode: "", status: "", archetype: "", project: "", identity: "", regression: false });
   const [results, setResults] = useState([]);
   const [log, setLog] = useState([]);
@@ -56,7 +58,7 @@ function App() {
   }, []);
 
   async function refreshAll() {
-    const [statusRes, entityRes, graphRes, watcherRes, schemaRes, flagsRes, timelineRes, reviewRes] = await Promise.all([
+    const [statusRes, entityRes, graphRes, watcherRes, schemaRes, flagsRes, timelineRes, reviewRes, setupRes, diagnosticsRes] = await Promise.all([
       fetch("/api/status"),
       fetch("/api/entities?limit=12"),
       fetch("/api/graph"),
@@ -65,6 +67,8 @@ function App() {
       fetch("/api/flags?limit=20"),
       fetch("/api/timeline?limit=40"),
       fetch("/api/review/imports"),
+      fetch("/api/setup"),
+      fetch("/api/diagnostics"),
     ]);
     const nextStatus = await statusRes.json();
     setStatus(nextStatus);
@@ -75,6 +79,8 @@ function App() {
     setFlags((await flagsRes.json()).flags || []);
     setTimeline((await timelineRes.json()).events || []);
     setReviews((await reviewRes.json()).imports || []);
+    setSetupConfig((await setupRes.json()).config || { chatgpt_source: "", chatlasso_source: "" });
+    setDiagnostics(await diagnosticsRes.json());
   }
 
   async function runSearch(event) {
@@ -129,6 +135,53 @@ function App() {
     const res = await fetch("/api/backup", { method: "POST" });
     const data = await res.json();
     addLog("Backup", data.path || "Backup created", res.ok ? "Success" : "Warning");
+  }
+
+  async function saveSetup(event) {
+    event?.preventDefault();
+    setBusy(true);
+    try {
+      const res = await fetch("/api/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(setupConfig),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Setup save failed");
+      setSetupConfig(data.config);
+      addLog("Setup", "Paths saved", "Success");
+    } catch (error) {
+      addLog("Setup", error.message, "Warning");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runFirstSetup() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/setup/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(setupConfig),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "First setup failed");
+      setSetupConfig(data.config);
+      addLog("First Setup", "Initial ingest and watcher setup completed", "Success");
+      await refreshAll();
+    } catch (error) {
+      addLog("First Setup", error.message, "Warning");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runDiagnostics() {
+    const res = await fetch("/api/diagnostics");
+    const data = await res.json();
+    setDiagnostics(data);
+    addLog("Diagnostics", data.healthy ? "All checks passed" : "One or more checks need attention", data.healthy ? "Success" : "Warning");
   }
 
   async function reviewImport(id, action) {
@@ -232,6 +285,26 @@ function App() {
 
         <section className="workspace">
           <div className="primary">
+            <Panel title="First-Run Setup" action={setupConfig.completed_at ? "Ready" : "Not completed"}>
+              <form className="setup-box" onSubmit={saveSetup}>
+                <div className="setup-fields">
+                  <label>
+                    <span>ChatGPT Export</span>
+                    <input value={setupConfig.chatgpt_source || ""} onChange={(event) => setSetupConfig({ ...setupConfig, chatgpt_source: event.target.value })} placeholder="C:\\Users\\TacIm\\Downloads\\conversations.json" />
+                  </label>
+                  <label>
+                    <span>ChatLasso SSI Folder</span>
+                    <input value={setupConfig.chatlasso_source || ""} onChange={(event) => setSetupConfig({ ...setupConfig, chatlasso_source: event.target.value })} placeholder="C:\\Path\\To\\10_Data_Harvest\\11_SSI_Raw" />
+                  </label>
+                </div>
+                <div className="setup-actions">
+                  <button disabled={busy}><Settings size={17} /> Save Paths</button>
+                  <button type="button" disabled={busy || (!setupConfig.chatgpt_source && !setupConfig.chatlasso_source)} onClick={runFirstSetup}><CheckCircle2 size={17} /> Run First Setup</button>
+                  <button type="button" disabled={busy} onClick={runDiagnostics}><Activity size={17} /> Diagnostics</button>
+                </div>
+              </form>
+            </Panel>
+
             <Panel title="Semantic Search">
               <form className="search-row" onSubmit={runSearch}>
                 <Search size={22} />
@@ -389,7 +462,19 @@ function App() {
                 <button onClick={refreshAll}><RefreshCw size={18} /> Rebuild View</button>
                 <button onClick={exportGraph}><Download size={18} /> Export Data</button>
                 <button onClick={createBackup}><Archive size={18} /> Backup</button>
-                <button onClick={() => addLog("Diagnostics", "Local API and SQLite responded", "Success")}><Activity size={18} /> Run Diagnostics</button>
+                <button onClick={runDiagnostics}><Activity size={18} /> Run Diagnostics</button>
+              </div>
+            </Panel>
+
+            <Panel title="Health Diagnostics" action={diagnostics?.healthy ? "Healthy" : "Check"}>
+              <div className="diagnostic-list">
+                {(diagnostics?.checks || seedDiagnostics).map((item) => (
+                  <div className={`diagnostic-row ${item.ok ? "ok" : "bad"}`} key={item.name}>
+                    {item.ok ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+                    <strong>{item.name}</strong>
+                    <span>{item.detail}</span>
+                  </div>
+                ))}
               </div>
             </Panel>
           </aside>
@@ -495,6 +580,10 @@ const seedEntities = [
 
 const seedLog = [
   { time: "--:--", operation: "Ready", details: "Command center initialized", state: "Success" },
+];
+
+const seedDiagnostics = [
+  { name: "Diagnostics", ok: false, detail: "Run diagnostics to check local services." },
 ];
 
 createRoot(document.getElementById("root")).render(<App />);
