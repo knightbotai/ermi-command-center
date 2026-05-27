@@ -8,8 +8,9 @@ from fastapi.testclient import TestClient
 
 from ermi.api import create_app
 from ermi.chatlasso import import_chatlasso, import_chatlasso_payload
+from ermi.exports import activity_summary, export_chat_csv, export_obsidian_second_brain, mine_code_blocks
 from ermi.flags import list_flags
-from ermi.ingest import ingest_export
+from ermi.ingest import ingest_export, reconstruct_messages
 from ermi.ops import backup_archive, restore_archive
 from ermi.review import list_import_reviews, set_import_review_status
 from ermi.search import search
@@ -66,6 +67,67 @@ def test_ingest_chatgpt_export(tmp_path: Path) -> None:
     assert (root / "ermi.sqlite3").exists()
     assert list((root / "vault" / "conversations" / "2026").glob("*.md"))
     assert search(root, "graph memory system", 1)[0]["chunk_id"] == "conv_1:chunk:0001"
+
+
+def test_chatgpt_true_path_ignores_abandoned_branches_and_exports(tmp_path: Path) -> None:
+    chat = {
+        "id": "branchy",
+        "title": "Python Project Plan",
+        "create_time": 1779894000,
+        "current_node": "final",
+        "mapping": {
+            "root": {"parent": None, "message": None},
+            "prompt": {
+                "parent": "root",
+                "message": {
+                    "id": "prompt",
+                    "author": {"role": "user"},
+                    "create_time": 1779894000,
+                    "content": {"parts": ["Give me a Python project plan."]},
+                },
+            },
+            "abandoned": {
+                "parent": "prompt",
+                "message": {
+                    "id": "abandoned",
+                    "author": {"role": "assistant"},
+                    "create_time": 1779894100,
+                    "content": {"parts": ["This abandoned answer should not be archived."]},
+                },
+            },
+            "final": {
+                "parent": "prompt",
+                "message": {
+                    "id": "final",
+                    "author": {"role": "assistant"},
+                    "create_time": 1779894200,
+                    "content": {"parts": ["Use this final answer.\n```python\nprint('kept')\n```"]},
+                },
+            },
+        },
+    }
+    source = tmp_path / "conversations.json"
+    source.write_text(json.dumps([chat]), encoding="utf-8")
+
+    messages = reconstruct_messages(chat)
+    assert [message["id"] for message in messages] == ["prompt", "final"]
+    assert "abandoned" not in "\n".join(message["content"] for message in messages)
+
+    root = tmp_path / "archive"
+    ingest_export(source, root)
+    result = search(root, "abandoned answer", 1)[0]
+    assert "abandoned" not in result["preview"].lower()
+
+    csv_target = tmp_path / "chat_history.csv"
+    code_target = tmp_path / "code.txt"
+    obsidian_target = tmp_path / "obsidian"
+    assert export_chat_csv(source, csv_target)["messages"] == 2
+    assert "abandoned" not in csv_target.read_text(encoding="utf-8")
+    assert mine_code_blocks(source, code_target)["code_blocks"] == 1
+    assert "print('kept')" in code_target.read_text(encoding="utf-8")
+    assert activity_summary(source, 1)[0]["message_count"] == 2
+    assert export_obsidian_second_brain(source, obsidian_target)["files"] == 1
+    assert list((obsidian_target / "Code").glob("*.md"))
 
 
 def test_import_chatlasso_ssi(tmp_path: Path) -> None:

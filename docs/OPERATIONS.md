@@ -70,6 +70,24 @@ UI:
 
 For recurring imports, use `Watched Folders`, paste the ChatLasso SSI folder, and click `Scan Now`.
 
+## ChatGPT Export Utilities
+
+ERMI can use the raw `conversations.json` graph for more than ingestion. These utilities follow the `current_node` path so abandoned regenerations do not pollute the derived outputs.
+
+```powershell
+python -m ermi chatgpt-titles C:\path\to\conversations.json
+python -m ermi export-chatgpt-csv C:\path\to\conversations.json
+python -m ermi mine-chatgpt-code C:\path\to\conversations.json
+python -m ermi chatgpt-activity C:\path\to\conversations.json --limit 10
+python -m ermi export-chatgpt-obsidian C:\path\to\conversations.json --target archive\exports\chatgpt_obsidian
+```
+
+Default outputs:
+
+- `archive/exports/chat_history.csv`
+- `archive/exports/all_extracted_code.txt`
+- `archive/exports/chatgpt_obsidian`
+
 ## Schema, Flags, Timeline, Review
 
 ```powershell

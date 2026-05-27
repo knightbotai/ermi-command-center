@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .chatlasso import import_chatlasso, import_chatlasso_payload
+from .exports import activity_summary, export_chat_csv, export_obsidian_second_brain, list_chat_titles, mine_code_blocks
 from .flags import list_flags
 from .graph import export_graph
 from .ingest import ingest_export, init_archive
@@ -39,6 +40,11 @@ class WatchRequest(BaseModel):
 
 class RestoreRequest(BaseModel):
     source: str
+
+
+class ExportRequest(BaseModel):
+    source: str
+    target: str | None = None
 
 
 def create_app(default_root: Path | None = None) -> FastAPI:
@@ -117,6 +123,48 @@ def create_app(default_root: Path | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail=f"Source not found: {source}")
         try:
             return {"source": str(source), "stats": ingest_export(source, root)}
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/export/chatgpt-csv")
+    def export_chatgpt_csv_endpoint(request: ExportRequest) -> dict[str, object]:
+        source = Path(request.source).expanduser().resolve()
+        target = Path(request.target).expanduser().resolve() if request.target else root / "exports" / "chat_history.csv"
+        try:
+            return {"target": str(target), "stats": export_chat_csv(source, target)}
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/export/chatgpt-code")
+    def export_chatgpt_code_endpoint(request: ExportRequest) -> dict[str, object]:
+        source = Path(request.source).expanduser().resolve()
+        target = Path(request.target).expanduser().resolve() if request.target else root / "exports" / "all_extracted_code.txt"
+        try:
+            return {"target": str(target), "stats": mine_code_blocks(source, target)}
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/export/chatgpt-obsidian")
+    def export_chatgpt_obsidian_endpoint(request: ExportRequest) -> dict[str, object]:
+        source = Path(request.source).expanduser().resolve()
+        target = Path(request.target).expanduser().resolve() if request.target else root / "exports" / "chatgpt_obsidian"
+        try:
+            return {"target": str(target), "stats": export_obsidian_second_brain(source, target)}
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/export/chatgpt-titles")
+    def export_chatgpt_titles(source: str) -> dict[str, object]:
+        try:
+            titles = list_chat_titles(Path(source).expanduser().resolve())
+            return {"titles": titles, "count": len(titles)}
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/export/chatgpt-activity")
+    def export_chatgpt_activity(source: str, limit: Annotated[int, Query(ge=1, le=50)] = 5) -> dict[str, object]:
+        try:
+            return {"activity": activity_summary(Path(source).expanduser().resolve(), limit)}
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

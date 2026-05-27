@@ -6,6 +6,9 @@ All notable changes to ERMI Command Center will be documented here.
 
 ### Added
 
+- True-path ChatGPT export reconstruction using `current_node`, preventing abandoned regenerated branches from entering the archive.
+- ChatGPT export utility commands for title health checks, CSV export, assistant code-block mining, activity summaries, and categorized Obsidian-ready Markdown export.
+- API endpoints for ChatGPT CSV/code/Obsidian exports, title listing, and activity summaries.
 - ChatLasso watched-folder registration and scan/import workflow.
 - SQLite schema versioning with additive migrations for existing local archives.
 - Dedicated ChatLasso SSI metadata storage for mode, archetype, status, domain nodes, audit status, hash beacon, loss report, regression flags, source path, and source hash.

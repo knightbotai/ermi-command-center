@@ -99,6 +99,9 @@ def reconstruct_messages(raw: dict[str, Any]) -> list[dict[str, Any]]:
     mapping = raw.get("mapping")
     if not isinstance(mapping, dict):
         return []
+    true_path = reconstruct_true_path(raw, mapping)
+    if true_path:
+        return true_path
     messages = []
     for node_id, node in mapping.items():
         message = node.get("message") if isinstance(node, dict) else None
@@ -123,6 +126,43 @@ def reconstruct_messages(raw: dict[str, Any]) -> list[dict[str, Any]]:
             }
         )
     messages.sort(key=lambda item: (item.get("created_at") or "", item["id"]))
+    return messages
+
+
+def reconstruct_true_path(raw: dict[str, Any], mapping: dict[str, Any]) -> list[dict[str, Any]]:
+    current_node_id = raw.get("current_node")
+    if not current_node_id:
+        return []
+    messages = []
+    visited = set()
+    while current_node_id and current_node_id not in visited:
+        visited.add(current_node_id)
+        node = mapping.get(current_node_id)
+        if not isinstance(node, dict):
+            break
+        message = node.get("message")
+        if message:
+            content = message_text(message.get("content", {}))
+            if content.strip():
+                author = message.get("author", {}).get("role") or "unknown"
+                messages.append(
+                    {
+                        "id": str(message.get("id") or current_node_id),
+                        "parent_id": node.get("parent"),
+                        "author": str(author),
+                        "created_at": timestamp_to_iso(message.get("create_time")),
+                        "content": content.strip(),
+                        "metadata": {
+                            "status": message.get("status"),
+                            "recipient": message.get("recipient"),
+                            "end_turn": message.get("end_turn"),
+                            "node_id": current_node_id,
+                            "path": "current_node",
+                        },
+                    }
+                )
+        current_node_id = node.get("parent")
+    messages.reverse()
     return messages
 
 
@@ -267,4 +307,3 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-

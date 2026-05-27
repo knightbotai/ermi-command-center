@@ -14,7 +14,12 @@ Canonical project aliases live in [docs/ALIASES.md](docs/ALIASES.md).
 
 ```powershell
 python -m ermi init
+python -m ermi chatgpt-titles C:\path\to\conversations.json
 python -m ermi ingest C:\path\to\conversations.json
+python -m ermi export-chatgpt-csv C:\path\to\conversations.json
+python -m ermi mine-chatgpt-code C:\path\to\conversations.json
+python -m ermi chatgpt-activity C:\path\to\conversations.json
+python -m ermi export-chatgpt-obsidian C:\path\to\conversations.json
 python -m ermi import-chatlasso C:\path\to\Obsidian\10_Data_Harvest\11_SSI_Raw
 python -m ermi watch-chatlasso C:\path\to\Obsidian\10_Data_Harvest\11_SSI_Raw --once
 python -m ermi search "recursive memory architecture"
@@ -42,7 +47,7 @@ http://127.0.0.1:5173
 
 The UI provides a local command center for ingesting exports, watched ChatLasso folders, hybrid recall, entity inspection, regression flags, import review, concept timeline, graph export, backups, archive counts, and operations logs.
 
-The ingest panel supports both raw ChatGPT exports and ChatLasso SSI Markdown output, making ChatLasso the capture/synthesis layer and ERMI the durable recall/index layer. ChatLasso can also POST SSI Markdown directly to ERMI at `http://127.0.0.1:8765/api/import/chatlasso-payload`. ERMI preserves ChatLasso `mode`, `archetype`, `status`, `hash_beacon`, `loss_report`, audit state, regression flags, and domain nodes as structured metadata.
+The ingest panel supports both raw ChatGPT exports and ChatLasso SSI Markdown output, making ChatLasso the capture/synthesis layer and ERMI the durable recall/index layer. ChatGPT imports follow the export's `current_node` path, so regenerated/abandoned branches stay out of the main archive. ChatLasso can also POST SSI Markdown directly to ERMI at `http://127.0.0.1:8765/api/import/chatlasso-payload`. ERMI preserves ChatLasso `mode`, `archetype`, `status`, `hash_beacon`, `loss_report`, audit state, regression flags, and domain nodes as structured metadata.
 
 ## Windows Desktop Installer
 
@@ -99,6 +104,7 @@ Then re-run ingestion so chunk embeddings are regenerated with `sentence-transfo
 
 - Raw source files are copied, never overwritten.
 - Markdown and database rows are derived artifacts and can be rebuilt.
+- ChatGPT `mapping` graphs are reconstructed from the final `current_node` path when available.
 - Chunk embeddings are stored in SQLite for a simple local MVP.
 - ChatLasso SSI payloads are imported as first-class memory artifacts with schema-versioned metadata.
 - Hybrid search uses local embeddings plus SQLite FTS5, so exact phrases and semantic matches both matter.
