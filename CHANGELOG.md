@@ -6,6 +6,9 @@ All notable changes to ERMI Command Center will be documented here.
 
 ### Added
 
+- ChatLasso SSI Markdown importer for files or folders.
+- Command center ingest mode toggle for ChatGPT exports versus ChatLasso SSI payloads.
+- ChatLasso integration documentation for the combined capture -> archive -> recall workflow.
 - Local ERMI Python package with CLI commands for archive initialization, ingestion, semantic search, entity listing, and graph export.
 - Immutable raw archive preservation under `archive/raw`.
 - Obsidian-compatible Markdown vault export under `archive/vault/conversations`.

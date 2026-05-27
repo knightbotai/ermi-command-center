@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from .chatlasso import import_chatlasso
 from .graph import export_graph
 from .ingest import ingest_export, init_archive
 from .search import search
@@ -15,6 +16,10 @@ from .storage import Store
 
 
 class IngestRequest(BaseModel):
+    source: str
+
+
+class ImportRequest(BaseModel):
     source: str
 
 
@@ -69,6 +74,16 @@ def create_app(default_root: Path | None = None) -> FastAPI:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.post("/api/import/chatlasso")
+    def import_chatlasso_endpoint(request: ImportRequest) -> dict[str, object]:
+        source = Path(request.source).expanduser().resolve()
+        if not source.exists():
+            raise HTTPException(status_code=404, detail=f"Source not found: {source}")
+        try:
+            return {"source": str(source), "stats": import_chatlasso(source, root)}
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.get("/api/entities")
     def entities(limit: Annotated[int, Query(ge=1, le=200)] = 50) -> dict[str, object]:
         init_archive(root)
@@ -98,4 +113,3 @@ def scalar(store: Store, sql: str) -> int:
 
 
 app = create_app()
-

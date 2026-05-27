@@ -34,6 +34,21 @@ python -m pytest -q
 npm run build
 ```
 
+## ChatLasso Import
+
+CLI:
+
+```powershell
+python -m ermi import-chatlasso C:\path\to\10_Data_Harvest\11_SSI_Raw
+```
+
+UI:
+
+1. Open `ERMI Command Center`.
+2. In `Ingest`, select `ChatLasso SSI`.
+3. Paste a single `.md` file path or the folder where ChatLasso writes SSI files.
+4. Click `Import SSI`.
+
 ## Desktop Installer
 
 Installer entrypoint:

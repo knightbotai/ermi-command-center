@@ -37,6 +37,7 @@ function App() {
   const [graph, setGraph] = useState({ nodes: [], edges: [] });
   const [query, setQuery] = useState("recursive memory architecture");
   const [source, setSource] = useState("");
+  const [sourceType, setSourceType] = useState("chatgpt");
   const [results, setResults] = useState([]);
   const [log, setLog] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -75,14 +76,16 @@ function App() {
     if (!source.trim()) return;
     setBusy(true);
     try {
-      const res = await fetch("/api/ingest", {
+      const endpoint = sourceType === "chatlasso" ? "/api/import/chatlasso" : "/api/ingest";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ source }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Ingest failed");
-      addLog("Ingest", `${data.stats.conversations} conversations, ${data.stats.chunks} chunks`, "Success");
+      const label = sourceType === "chatlasso" ? "ChatLasso" : "ChatGPT";
+      addLog(label, `${data.stats.conversations} memories, ${data.stats.chunks} chunks`, "Success");
       await refreshAll();
     } catch (error) {
       addLog("Ingest", error.message, "Warning");
@@ -179,13 +182,17 @@ function App() {
             <div className="lower-grid">
               <Panel title="Ingest">
                 <form className="ingest-box" onSubmit={runIngest}>
+                  <div className="ingest-mode">
+                    <button type="button" className={sourceType === "chatgpt" ? "selected" : ""} onClick={() => setSourceType("chatgpt")}>ChatGPT Export</button>
+                    <button type="button" className={sourceType === "chatlasso" ? "selected" : ""} onClick={() => setSourceType("chatlasso")}>ChatLasso SSI</button>
+                  </div>
                   <div className="drop-zone">
                     <FileUp size={34} />
-                    <strong>Paste a conversations.json path</strong>
-                    <span>Raw source is preserved. Derived archive artifacts are rebuilt.</span>
+                    <strong>{sourceType === "chatlasso" ? "Paste a ChatLasso SSI file or folder" : "Paste a conversations.json path"}</strong>
+                    <span>{sourceType === "chatlasso" ? "SSI payloads become searchable ERMI memory chunks." : "Raw source is preserved. Derived archive artifacts are rebuilt."}</span>
                   </div>
-                  <input value={source} onChange={(event) => setSource(event.target.value)} placeholder="C:\\Users\\TacIm\\Downloads\\conversations.json" />
-                  <button disabled={busy || !source.trim()}><FileUp size={18} /> Run Ingest</button>
+                  <input value={source} onChange={(event) => setSource(event.target.value)} placeholder={sourceType === "chatlasso" ? "C:\\Path\\To\\Obsidian\\10_Data_Harvest\\11_SSI_Raw" : "C:\\Users\\TacIm\\Downloads\\conversations.json"} />
+                  <button disabled={busy || !source.trim()}><FileUp size={18} /> {sourceType === "chatlasso" ? "Import SSI" : "Run Ingest"}</button>
                 </form>
               </Panel>
 
@@ -321,4 +328,3 @@ const seedLog = [
 ];
 
 createRoot(document.getElementById("root")).render(<App />);
-

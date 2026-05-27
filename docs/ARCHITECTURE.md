@@ -31,11 +31,17 @@ ERMI follows the roadmap from the Externalized Recursive Memory Infrastructure s
    - FastAPI backend serves local operations.
    - React/Vite frontend provides the visual command surface.
 
+8. ChatLasso bridge
+   - Imports ChatLasso SSI Markdown files as first-class ERMI memory artifacts.
+   - Preserves raw SSI files under `archive/raw/chatlasso`.
+   - Writes canonical ERMI vault copies under `archive/vault/chatlasso`.
+   - Chunks SSI headings, embeds sections, and indexes domain nodes/entities.
+
 ## Next Architecture Targets
 
 - File picker and watched folder ingestion.
 - Dedicated graph visualization.
+- Direct ChatLasso export-to-ERMI handoff.
 - Richer entity extraction and relationship typing.
 - ChromaDB/LanceDB or pgvector backing store.
 - Periodic synthesis and concept evolution tracking.
-

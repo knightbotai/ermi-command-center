@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from .chatlasso import import_chatlasso
 from .graph import export_graph
 from .ingest import ingest_export, init_archive
 from .search import search
@@ -18,6 +19,9 @@ def main(argv: list[str] | None = None) -> int:
 
     ingest_parser = subparsers.add_parser("ingest", help="Ingest ChatGPT conversations.json.")
     ingest_parser.add_argument("source", type=Path)
+
+    chatlasso_parser = subparsers.add_parser("import-chatlasso", help="Import ChatLasso SSI Markdown files.")
+    chatlasso_parser.add_argument("source", type=Path)
 
     search_parser = subparsers.add_parser("search", help="Semantic search over indexed chunks.")
     search_parser.add_argument("query")
@@ -38,6 +42,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "ingest":
         stats = ingest_export(args.source.resolve(), root)
         print("Ingest complete")
+        for key, value in stats.items():
+            print(f"{key}: {value}")
+        return 0
+    if args.command == "import-chatlasso":
+        stats = import_chatlasso(args.source.resolve(), root)
+        print("ChatLasso import complete")
         for key, value in stats.items():
             print(f"{key}: {value}")
         return 0
@@ -65,4 +75,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

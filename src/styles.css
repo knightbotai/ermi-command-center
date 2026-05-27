@@ -371,8 +371,25 @@ main {
   gap: 10px;
 }
 
+.ingest-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.ingest-mode button {
+  min-height: 34px;
+  font-size: 12px;
+}
+
+.ingest-mode button.selected {
+  border-color: var(--cyan);
+  background: var(--cyan-soft);
+  color: var(--cyan);
+}
+
 .drop-zone {
-  min-height: 150px;
+  min-height: 132px;
   border: 1px dashed #49616a;
   border-radius: var(--radius);
   display: grid;

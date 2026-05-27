@@ -29,6 +29,16 @@ python -m pip install -e ".[dev,ml]"
 npm install
 ```
 
+## Import ChatLasso SSI Output
+
+Point ERMI at a single SSI Markdown file or a folder of ChatLasso/Obsidian SSI files:
+
+```powershell
+python -m ermi import-chatlasso C:\path\to\10_Data_Harvest\11_SSI_Raw
+```
+
+In the command center UI, choose `ChatLasso SSI` in the ingest panel and paste the same file or folder path.
+
 ## Run
 
 Use two terminals.
