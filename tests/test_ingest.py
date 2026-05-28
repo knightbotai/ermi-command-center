@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+import ermi.updater as updater
 from ermi.api import create_app
 from ermi.chatlasso import import_chatlasso, import_chatlasso_payload
 from ermi.exports import activity_summary, export_chat_csv, export_obsidian_second_brain, mine_code_blocks
@@ -456,3 +457,46 @@ Setup should be boring and reliable.
     diagnostics = client.get("/api/diagnostics").json()
     assert diagnostics["healthy"] is True
     assert {item["name"] for item in diagnostics["checks"]} >= {"Python", "SQLite", "Schema", "Archive writable"}
+
+
+def test_update_status_and_install_use_fast_forward_with_backup(tmp_path: Path, monkeypatch) -> None:
+    repo = tmp_path / "repo"
+    root = repo / "archive"
+    (repo / ".git").mkdir(parents=True)
+    root.mkdir()
+    commands: list[list[str]] = []
+    state = {"commit": "aaaa111111111111111111111111111111111111"}
+
+    def fake_run_command(args, cwd, *, check=True, timeout=30):
+        commands.append(args)
+        if args == ["git", "rev-parse", "HEAD"]:
+            return updater.CommandResult(args, 0, f"{state['commit']}\n", "")
+        if args == ["git", "branch", "--show-current"]:
+            return updater.CommandResult(args, 0, "main\n", "")
+        if args == ["git", "remote", "get-url", "origin"]:
+            return updater.CommandResult(args, 0, "https://github.com/knightbotai/ermi-command-center.git\n", "")
+        if args == ["git", "status", "--porcelain"]:
+            return updater.CommandResult(args, 0, "", "")
+        if args == ["git", "ls-remote", "origin", "refs/heads/main"]:
+            return updater.CommandResult(args, 0, "bbbb222222222222222222222222222222222222\trefs/heads/main\n", "")
+        if args[:3] == ["git", "merge-base", "--is-ancestor"]:
+            return updater.CommandResult(args, 0, "", "")
+        if args[:4] == ["git", "pull", "--ff-only", "origin"]:
+            state["commit"] = "bbbb222222222222222222222222222222222222"
+            return updater.CommandResult(args, 0, "Fast-forward\n", "")
+        return updater.CommandResult(args, 0, "ok\n", "")
+
+    monkeypatch.setattr(updater, "run_command", fake_run_command)
+    monkeypatch.setattr(updater, "resolve_command", lambda _name, _fallbacks: "npm.cmd")
+
+    status = updater.update_status(root)
+    assert status["update_available"] is True
+    assert status["current_short"] == "aaaa111"
+    assert status["remote_short"] == "bbbb222"
+
+    result = updater.install_update(root)
+    assert result["ok"] is True
+    assert result["restart_required"] is True
+    assert Path(result["backup"]).exists()
+    assert ["git", "pull", "--ff-only", "origin", "main"] in commands
+    assert any(command[-1] == "build" for command in commands)

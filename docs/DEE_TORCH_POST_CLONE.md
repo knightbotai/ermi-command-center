@@ -45,7 +45,7 @@ ERMI Command Center
 Update ERMI Command Center
 ```
 
-The updater creates a backup before pulling new code.
+Inside ERMI, use the `Update Center` panel to check GitHub and install updates without opening PowerShell. The updater creates a backup before pulling new code.
 
 ## Copying To DeeTorch GitHub
 

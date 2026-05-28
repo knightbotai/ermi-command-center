@@ -152,6 +152,17 @@ python -m ermi --root archive restore C:\path\to\archive\backups\ermi-backup-YYY
 Backups include SQLite, raw source files, vault Markdown, watcher config, graph export, and a changelog snapshot when present.
 The Windows updater creates a backup automatically before pulling new code.
 
+## In-App Updates
+
+Use the Command Center `Update Center` panel:
+
+1. Choose `KnightBot main`.
+2. Click `Check GitHub`.
+3. Click `Install Update` when an update is available.
+4. Relaunch ERMI after a successful install so backend code changes are loaded.
+
+The in-app updater uses fast-forward-only git updates. It creates a backup, pulls from GitHub, updates Python/npm dependencies, runs migrations, rebuilds the UI, and shows the update log. If Justin has local code changes or a diverged checkout, it blocks the update and asks for manual git review instead of overwriting anything.
+
 ## Desktop Installer
 
 Installer entrypoint:

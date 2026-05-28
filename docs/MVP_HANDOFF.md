@@ -65,13 +65,15 @@ sample_data\chatlasso\11_SSI_Raw
 
 ## Update
 
+Preferred path: use the Command Center `Update Center` panel to check `KnightBot main`, install updates, and view the update log.
+
 Use the Desktop shortcut:
 
 ```text
 Update ERMI Command Center
 ```
 
-The updater creates a backup before pulling the latest code, updates dependencies, runs migrations, and verifies tests/build.
+Both updater paths create a backup before pulling the latest code, update dependencies, run migrations, and rebuild the UI. Relaunch ERMI after an update so backend changes load.
 
 ## Windows Setup Wizard
 

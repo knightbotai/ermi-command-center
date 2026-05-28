@@ -20,6 +20,7 @@ from .search import search
 from .setup import load_setup, run_first_setup, save_setup
 from .storage import LATEST_SCHEMA_VERSION, Store
 from .timeline import concept_timeline
+from .updater import install_update, update_status
 from .watch import add_watcher, load_watchers, scan_chatlasso_watchers
 
 
@@ -57,6 +58,10 @@ class OpenFolderRequest(BaseModel):
 class SetupRequest(BaseModel):
     chatgpt_source: str = ""
     chatlasso_source: str = ""
+
+
+class UpdateRequest(BaseModel):
+    channel: str = "main"
 
 
 def create_app(default_root: Path | None = None) -> FastAPI:
@@ -125,6 +130,20 @@ def create_app(default_root: Path | None = None) -> FastAPI:
     @app.get("/api/diagnostics")
     def diagnostics() -> dict[str, object]:
         return run_diagnostics(root)
+
+    @app.get("/api/update/status")
+    def update_status_endpoint(channel: str = "main") -> dict[str, object]:
+        try:
+            return update_status(root, channel)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/update/install")
+    def update_install_endpoint(request: UpdateRequest) -> dict[str, object]:
+        try:
+            return install_update(root, request.channel)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/search")
     def semantic_search(

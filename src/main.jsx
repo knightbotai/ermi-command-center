@@ -51,6 +51,10 @@ function App() {
   const [reviews, setReviews] = useState([]);
   const [setupConfig, setSetupConfig] = useState({ chatgpt_source: "", chatlasso_source: "" });
   const [diagnostics, setDiagnostics] = useState(null);
+  const [updateChannel, setUpdateChannel] = useState("main");
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [updateLog, setUpdateLog] = useState([]);
+  const [updating, setUpdating] = useState(false);
   const [filters, setFilters] = useState({ mode: "", status: "", archetype: "", project: "", identity: "", regression: false });
   const [results, setResults] = useState([]);
   const [log, setLog] = useState([]);
@@ -185,6 +189,46 @@ function App() {
     const data = await res.json();
     setDiagnostics(data);
     addLog("Diagnostics", data.healthy ? "All checks passed" : "One or more checks need attention", data.healthy ? "Success" : "Warning");
+  }
+
+  async function checkForUpdates() {
+    setUpdating(true);
+    try {
+      const params = new URLSearchParams({ channel: updateChannel });
+      const res = await fetch(apiUrl(`/api/update/status?${params.toString()}`));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Update check failed");
+      setUpdateInfo(data);
+      setUpdateLog([data.message]);
+      addLog("Update", data.message, data.update_available ? "Warning" : "Success");
+    } catch (error) {
+      setUpdateLog([error.message]);
+      addLog("Update", error.message, "Warning");
+    } finally {
+      setUpdating(false);
+    }
+  }
+
+  async function installUpdate() {
+    setUpdating(true);
+    try {
+      const res = await fetch(apiUrl("/api/update/install"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channel: updateChannel }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.ok === false) throw new Error(data.detail || data.log?.[0] || "Update install failed");
+      setUpdateInfo(data.status || updateInfo);
+      setUpdateLog(data.log || []);
+      addLog("Update", data.skipped ? "Already up to date" : "Update installed; relaunch ERMI to load backend changes", data.skipped ? "Success" : "Warning");
+      await refreshAll();
+    } catch (error) {
+      setUpdateLog([error.message]);
+      addLog("Update", error.message, "Warning");
+    } finally {
+      setUpdating(false);
+    }
   }
 
   async function openFolder(name) {
@@ -476,6 +520,25 @@ function App() {
                 <button onClick={exportGraph}><Download size={18} /> Export Data</button>
                 <button onClick={createBackup}><Archive size={18} /> Backup</button>
                 <button onClick={runDiagnostics}><Activity size={18} /> Run Diagnostics</button>
+              </div>
+            </Panel>
+
+            <Panel title="Update Center" action={updateInfo?.update_available ? "Available" : updateInfo ? "Current" : "Ready"}>
+              <div className="update-box">
+                <select value={updateChannel} onChange={(event) => setUpdateChannel(event.target.value)}>
+                  <option value="main">KnightBot main</option>
+                </select>
+                <div className="update-actions">
+                  <button disabled={updating} onClick={checkForUpdates}><RefreshCw size={17} /> Check GitHub</button>
+                  <button disabled={updating || updateInfo?.diverged || updateInfo?.dirty} onClick={installUpdate}><Download size={17} /> Install Update</button>
+                </div>
+                <div className={`update-status ${updateInfo?.update_available ? "available" : ""} ${updateInfo?.diverged || updateInfo?.dirty ? "blocked" : ""}`}>
+                  <strong>{updateInfo?.message || "Choose a channel and check for updates."}</strong>
+                  <span>{updateInfo ? `${updateInfo.current_short} -> ${updateInfo.remote_short}` : "No update check yet."}</span>
+                </div>
+                {updateLog.length > 0 && (
+                  <pre>{updateLog.slice(-8).join("\n")}</pre>
+                )}
               </div>
             </Panel>
 

@@ -526,6 +526,65 @@ main {
   white-space: nowrap;
 }
 
+.update-box {
+  display: grid;
+  gap: 10px;
+}
+
+.update-box select {
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #071116;
+  color: var(--text);
+  padding: 0 10px;
+}
+
+.update-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.update-status {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #071116;
+  padding: 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.update-status.available {
+  border-color: var(--gold);
+}
+
+.update-status.blocked {
+  border-color: var(--red);
+}
+
+.update-status strong {
+  font-size: 13px;
+}
+
+.update-status span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.update-box pre {
+  max-height: 130px;
+  overflow: auto;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #05090c;
+  color: var(--muted);
+  padding: 10px;
+  font-size: 11px;
+  white-space: pre-wrap;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
