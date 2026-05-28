@@ -349,6 +349,45 @@ Jusstin and ERMI need a review queue.
     assert known_folder(root, "vault") == (root / "vault").resolve()
 
 
+def test_timeline_rows_produce_unique_ui_keys_for_repeated_concepts(tmp_path: Path) -> None:
+    root = tmp_path / "archive"
+    import_chatlasso_payload(
+        "Repeated ERMI Payload",
+        """---
+type: chat_extracted_ssi
+mode: Review
+status: Active
+domain_nodes: ["ERMI", "ERMI"]
+date_extracted: 2026-05-27T21:00:00+00:00
+---
+
+# Repeated ERMI Payload
+
+## Cognitive DNA
+ERMI should keep ERMI timeline rows stable when ERMI appears as both metadata and extracted text.
+""",
+        root,
+    )
+
+    events = concept_timeline(root)
+    ui_keys = [
+        ":".join(
+            [
+                str(item.get("conversation_id") or "seed"),
+                str(item.get("concept") or item.get("title") or "event"),
+                str(item.get("kind") or "kind"),
+                str(item.get("event_at") or "undated"),
+                str(index),
+            ]
+        )
+        for index, item in enumerate(events)
+    ]
+
+    assert len(ui_keys) == len(set(ui_keys))
+    assert any(item["concept"] == "ERMI" and item["kind"] == "system" for item in events)
+    assert any(item["concept"] == "ERMI" and item["kind"] == "concept" for item in events)
+
+
 def test_first_run_setup_and_diagnostics_api(tmp_path: Path) -> None:
     source = tmp_path / "conversations.json"
     source.write_text(

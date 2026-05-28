@@ -16,6 +16,7 @@ All notable changes to ERMI Command Center will be documented here.
 - Signed Windows installer walkthrough documentation.
 - Android/Termux install and launch scripts for mobile local MVP use.
 - Capacitor Android project and build script for a sideload APK UI shell that connects to the local Termux backend.
+- Fixed duplicate Concept Evolution Timeline rows that caused repeated React key warnings after ChatLasso imports.
 - Root-level `START-HERE.cmd` for one-click post-clone setup, diagnostics, shortcut creation, launch, and browser open.
 - DeeTorch post-clone setup guide with one-click usage and optional GitHub remote handoff notes.
 - MVP handoff guide with install, setup, sample-data, daily-use, update, and recovery notes.

@@ -12,7 +12,7 @@ def concept_timeline(root: Path, limit: int = 100) -> list[dict[str, object]]:
     with Store(root / "ermi.sqlite3") as store:
         rows = store.conn.execute(
             """
-            SELECT conversations.id AS conversation_id, conversations.title,
+            SELECT DISTINCT conversations.id AS conversation_id, conversations.title,
                    coalesce(chatlasso_metadata.date_extracted, conversations.created_at) AS event_at,
                    conversations.project, conversations.identity,
                    chatlasso_metadata.mode, chatlasso_metadata.archetype,

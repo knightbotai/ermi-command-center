@@ -429,7 +429,7 @@ function App() {
             <Panel title="Concept Evolution Timeline" action={`${timeline.length} events`}>
               <div className="timeline-list">
                 {(timeline.length ? timeline : [{ event_at: "No events yet", concept: "Import ChatLasso SSI or ChatGPT exports", title: "Waiting for memory" }]).slice(0, 12).map((item, index) => (
-                  <div className="timeline-row" key={`${item.conversation_id || "seed"}:${item.concept || index}`}>
+                  <div className="timeline-row" key={`${item.conversation_id || "seed"}:${item.concept || item.title || "event"}:${item.kind || "kind"}:${item.event_at || "undated"}:${index}`}>
                     <span>{item.event_at || "undated"}</span>
                     <strong>{item.concept || item.title}</strong>
                     <small>{item.mode || item.project || "ERMI"}</small>
