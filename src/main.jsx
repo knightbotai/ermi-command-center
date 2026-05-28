@@ -362,6 +362,16 @@ function App() {
               </form>
             </Panel>
 
+            <UpdateCenter
+              updateChannel={updateChannel}
+              setUpdateChannel={setUpdateChannel}
+              updateInfo={updateInfo}
+              updateLog={updateLog}
+              updating={updating}
+              checkForUpdates={checkForUpdates}
+              installUpdate={installUpdate}
+            />
+
             <Panel title="Semantic Search">
               <form className="search-row" onSubmit={runSearch}>
                 <Search size={22} />
@@ -523,25 +533,6 @@ function App() {
               </div>
             </Panel>
 
-            <Panel title="Update Center" action={updateInfo?.update_available ? "Available" : updateInfo ? "Current" : "Ready"}>
-              <div className="update-box">
-                <select value={updateChannel} onChange={(event) => setUpdateChannel(event.target.value)}>
-                  <option value="main">KnightBot main</option>
-                </select>
-                <div className="update-actions">
-                  <button disabled={updating} onClick={checkForUpdates}><RefreshCw size={17} /> Check GitHub</button>
-                  <button disabled={updating || updateInfo?.diverged || updateInfo?.dirty} onClick={installUpdate}><Download size={17} /> Install Update</button>
-                </div>
-                <div className={`update-status ${updateInfo?.update_available ? "available" : ""} ${updateInfo?.diverged || updateInfo?.dirty ? "blocked" : ""}`}>
-                  <strong>{updateInfo?.message || "Choose a channel and check for updates."}</strong>
-                  <span>{updateInfo ? `${updateInfo.current_short} -> ${updateInfo.remote_short}` : "No update check yet."}</span>
-                </div>
-                {updateLog.length > 0 && (
-                  <pre>{updateLog.slice(-8).join("\n")}</pre>
-                )}
-              </div>
-            </Panel>
-
             <Panel title="Open Folders">
               <div className="folder-actions">
                 <button onClick={() => openFolder("archive")}><FolderOpen size={17} /> Archive</button>
@@ -594,6 +585,29 @@ function Panel({ title, action, children }) {
       </div>
       {children}
     </section>
+  );
+}
+
+function UpdateCenter({ updateChannel, setUpdateChannel, updateInfo, updateLog, updating, checkForUpdates, installUpdate }) {
+  return (
+    <Panel title="Update Center" action={updateInfo?.update_available ? "Available" : updateInfo ? "Current" : "Ready"}>
+      <div className="update-box">
+        <select value={updateChannel} onChange={(event) => setUpdateChannel(event.target.value)}>
+          <option value="main">KnightBot main</option>
+        </select>
+        <div className="update-actions">
+          <button disabled={updating} onClick={checkForUpdates}><RefreshCw size={17} /> Check GitHub</button>
+          <button disabled={updating || updateInfo?.diverged || updateInfo?.dirty} onClick={installUpdate}><Download size={17} /> Install Update</button>
+        </div>
+        <div className={`update-status ${updateInfo?.update_available ? "available" : ""} ${updateInfo?.diverged || updateInfo?.dirty ? "blocked" : ""}`}>
+          <strong>{updateInfo?.message || "Choose a channel and check for updates."}</strong>
+          <span>{updateInfo ? `${updateInfo.current_short} -> ${updateInfo.remote_short}` : "No update check yet."}</span>
+        </div>
+        {updateLog.length > 0 && (
+          <pre>{updateLog.slice(-8).join("\n")}</pre>
+        )}
+      </div>
+    </Panel>
   );
 }
 

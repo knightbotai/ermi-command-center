@@ -9,6 +9,23 @@ function Test-Port {
     return $null -ne (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
 }
 
+function Stop-PortListeners {
+    param([int[]]$Ports)
+
+    foreach ($port in $Ports) {
+        $listeners = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+        foreach ($listener in $listeners) {
+            try {
+                Stop-Process -Id $listener.OwningProcess -Force -ErrorAction Stop
+                Start-Sleep -Milliseconds 300
+            }
+            catch {
+                Write-Host "Could not stop process $($listener.OwningProcess) on port $port: $($_.Exception.Message)" -ForegroundColor Yellow
+            }
+        }
+    }
+}
+
 function Start-HiddenProcess {
     param(
         [string]$FilePath,
@@ -44,6 +61,8 @@ try {
     $python = Resolve-CommandPath -Names @("python.exe", "python") -Fallbacks @("$env:LOCALAPPDATA\Programs\Python\Python313\python.exe")
     $npm = Resolve-CommandPath -Names @("npm.cmd", "npm") -Fallbacks @("C:\Program Files\nodejs\npm.cmd")
     $env:Path = "$(Split-Path -Parent $npm);$env:Path"
+
+    Stop-PortListeners -Ports @($ApiPort, $UiPort)
 
     if (-not (Test-Port $ApiPort)) {
         Start-HiddenProcess -FilePath $python -ArgumentList @("-m", "ermi.server", "--root", "archive", "--host", "127.0.0.1", "--port", "$ApiPort") -WorkingDirectory $Root
