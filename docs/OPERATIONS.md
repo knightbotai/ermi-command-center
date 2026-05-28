@@ -161,7 +161,7 @@ Use the Command Center `Update Center` panel:
 3. Click `Install Update` when an update is available.
 4. Relaunch ERMI after a successful install so backend code changes are loaded.
 
-The in-app updater uses fast-forward-only git updates. It creates a backup, pulls from GitHub, updates Python/npm dependencies, runs migrations, rebuilds the UI, and shows the update log. If Justin has local code changes or a diverged checkout, it blocks the update and asks for manual git review instead of overwriting anything.
+The in-app updater uses fast-forward-only git updates. It creates a backup, pulls from GitHub, updates Python/npm dependencies, runs migrations, rebuilds the UI, and shows the update log. If Jusstin has local code changes or a diverged checkout, it blocks the update and asks for manual git review instead of overwriting anything.
 
 ## Desktop Installer
 
