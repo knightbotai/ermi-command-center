@@ -10,8 +10,7 @@ from .storage import Store
 def list_import_reviews(root: Path) -> list[dict[str, object]]:
     init_archive(root)
     with Store(root / "ermi.sqlite3") as store:
-        rows = store.conn.execute(
-            """
+        rows = store.conn.execute("""
             SELECT import_reviews.conversation_id, import_reviews.status,
                    import_reviews.reason, import_reviews.created_at,
                    import_reviews.updated_at, conversations.title,
@@ -19,8 +18,7 @@ def list_import_reviews(root: Path) -> list[dict[str, object]]:
             FROM import_reviews
             JOIN conversations ON conversations.id = import_reviews.conversation_id
             ORDER BY import_reviews.updated_at DESC
-            """
-        ).fetchall()
+            """).fetchall()
     return [dict(row) for row in rows]
 
 

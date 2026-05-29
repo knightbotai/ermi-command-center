@@ -46,7 +46,9 @@ def command_check(name: str, fallbacks: list[str]) -> dict[str, Any]:
         "name": name,
         "ok": bool(path),
         "detail": path or f"{name} not found",
-        "fix": f"{name} is available." if path else "Run install\\Install-ERMI.cmd to install or repair prerequisites.",
+        "fix": (
+            f"{name} is available." if path else "Run install\\Install-ERMI.cmd to install or repair prerequisites."
+        ),
     }
 
 
@@ -56,7 +58,12 @@ def sqlite_check(root: Path) -> dict[str, Any]:
             conn.execute("SELECT 1").fetchone()
         return {"name": "SQLite", "ok": True, "detail": str(root / "ermi.sqlite3"), "fix": "SQLite is reachable."}
     except Exception as exc:
-        return {"name": "SQLite", "ok": False, "detail": str(exc), "fix": "Run python -m ermi --root archive init, then retry diagnostics."}
+        return {
+            "name": "SQLite",
+            "ok": False,
+            "detail": str(exc),
+            "fix": "Run python -m ermi --root archive init, then retry diagnostics.",
+        }
 
 
 def archive_write_check(root: Path) -> dict[str, Any]:
@@ -66,7 +73,12 @@ def archive_write_check(root: Path) -> dict[str, Any]:
         probe.unlink(missing_ok=True)
         return {"name": "Archive writable", "ok": True, "detail": str(root), "fix": "Archive path is writable."}
     except Exception as exc:
-        return {"name": "Archive writable", "ok": False, "detail": str(exc), "fix": "Move ERMI to a writable folder or run PowerShell with access to this archive path."}
+        return {
+            "name": "Archive writable",
+            "ok": False,
+            "detail": str(exc),
+            "fix": "Move ERMI to a writable folder or run PowerShell with access to this archive path.",
+        }
 
 
 def schema_check(root: Path) -> dict[str, Any]:
@@ -77,7 +89,11 @@ def schema_check(root: Path) -> dict[str, Any]:
             "name": "Schema",
             "ok": current == LATEST_SCHEMA_VERSION,
             "detail": f"{current}/{LATEST_SCHEMA_VERSION}",
-            "fix": "Schema is current." if current == LATEST_SCHEMA_VERSION else "Run python -m ermi --root archive migrate.",
+            "fix": (
+                "Schema is current."
+                if current == LATEST_SCHEMA_VERSION
+                else "Run python -m ermi --root archive migrate."
+            ),
         }
     except Exception as exc:
         return {"name": "Schema", "ok": False, "detail": str(exc), "fix": "Run python -m ermi --root archive migrate."}
@@ -90,7 +106,11 @@ def watcher_check(root: Path) -> dict[str, Any]:
         "name": "Watch folders",
         "ok": not missing,
         "detail": f"{len(watchers)} configured, {len(missing)} missing",
-        "fix": "Watched folders are reachable." if not missing else "Remove or re-add missing watched folders in the command center.",
+        "fix": (
+            "Watched folders are reachable."
+            if not missing
+            else "Remove or re-add missing watched folders in the command center."
+        ),
     }
 
 
@@ -116,4 +136,9 @@ def git_remote_check() -> dict[str, Any]:
         )
         return {"name": "Git remote", "ok": True, "detail": result.stdout.strip(), "fix": "Git remote is configured."}
     except Exception as exc:
-        return {"name": "Git remote", "ok": False, "detail": str(exc), "fix": "Run git remote add origin https://github.com/knightbotai/ermi-command-center.git."}
+        return {
+            "name": "Git remote",
+            "ok": False,
+            "detail": str(exc),
+            "fix": "Run git remote add origin https://github.com/knightbotai/ermi-command-center.git.",
+        }

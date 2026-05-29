@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import time
 from pathlib import Path
 from threading import Event
 
@@ -92,4 +91,3 @@ def watch_chatlasso(root: Path, interval: int = 15, stop_event: Event | None = N
     while not stop_event.is_set():
         scan_chatlasso_watchers(root)
         stop_event.wait(interval)
-
