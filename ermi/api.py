@@ -172,7 +172,11 @@ def create_app(default_root: Path | None = None) -> FastAPI:
             "project": project,
             "identity": identity,
         }
-        return {"query": q, "filters": filters, "results": search(root, q, limit, filters)}
+        return {
+            "query": q,
+            "filters": filters,
+            "results": search(root, q, limit, filters),
+        }
 
     @app.post("/api/ingest")
     def ingest(request: IngestRequest) -> dict[str, object]:
@@ -188,7 +192,9 @@ def create_app(default_root: Path | None = None) -> FastAPI:
     def export_chatgpt_csv_endpoint(request: ExportRequest) -> dict[str, object]:
         source = Path(request.source).expanduser().resolve()
         target = (
-            Path(request.target).expanduser().resolve() if request.target else root / "exports" / "chat_history.csv"
+            Path(request.target).expanduser().resolve()
+            if request.target
+            else root / "exports" / "chat_history.csv"
         )
         try:
             return {"target": str(target), "stats": export_chat_csv(source, target)}
@@ -212,10 +218,15 @@ def create_app(default_root: Path | None = None) -> FastAPI:
     def export_chatgpt_obsidian_endpoint(request: ExportRequest) -> dict[str, object]:
         source = Path(request.source).expanduser().resolve()
         target = (
-            Path(request.target).expanduser().resolve() if request.target else root / "exports" / "chatgpt_obsidian"
+            Path(request.target).expanduser().resolve()
+            if request.target
+            else root / "exports" / "chatgpt_obsidian"
         )
         try:
-            return {"target": str(target), "stats": export_obsidian_second_brain(source, target)}
+            return {
+                "target": str(target),
+                "stats": export_obsidian_second_brain(source, target),
+            }
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -228,9 +239,13 @@ def create_app(default_root: Path | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/export/chatgpt-activity")
-    def export_chatgpt_activity(source: str, limit: Annotated[int, Query(ge=1, le=50)] = 5) -> dict[str, object]:
+    def export_chatgpt_activity(
+        source: str, limit: Annotated[int, Query(ge=1, le=50)] = 5
+    ) -> dict[str, object]:
         try:
-            return {"activity": activity_summary(Path(source).expanduser().resolve(), limit)}
+            return {
+                "activity": activity_summary(Path(source).expanduser().resolve(), limit)
+            }
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -245,11 +260,16 @@ def create_app(default_root: Path | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.post("/api/import/chatlasso-payload")
-    def import_chatlasso_payload_endpoint(request: ChatLassoPayloadRequest) -> dict[str, object]:
+    def import_chatlasso_payload_endpoint(
+        request: ChatLassoPayloadRequest,
+    ) -> dict[str, object]:
         if not request.content.strip():
             raise HTTPException(status_code=400, detail="Content is required.")
         try:
-            return {"source": "payload", "stats": import_chatlasso_payload(request.title, request.content, root)}
+            return {
+                "source": "payload",
+                "stats": import_chatlasso_payload(request.title, request.content, root),
+            }
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -268,7 +288,10 @@ def create_app(default_root: Path | None = None) -> FastAPI:
     @app.post("/api/watchers/chatlasso/scan")
     def scan_chatlasso() -> dict[str, object]:
         try:
-            return {"stats": scan_chatlasso_watchers(root), "chatlasso": load_watchers(root)}
+            return {
+                "stats": scan_chatlasso_watchers(root),
+                "chatlasso": load_watchers(root),
+            }
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -305,14 +328,18 @@ def create_app(default_root: Path | None = None) -> FastAPI:
         try:
             return set_import_review_status(root, conversation_id, "accepted")
         except FileNotFoundError as exc:
-            raise HTTPException(status_code=404, detail=f"Import not found: {conversation_id}") from exc
+            raise HTTPException(
+                status_code=404, detail=f"Import not found: {conversation_id}"
+            ) from exc
 
     @app.post("/api/review/imports/{conversation_id}/reject")
     def reject_import(conversation_id: str) -> dict[str, object]:
         try:
             return set_import_review_status(root, conversation_id, "rejected")
         except FileNotFoundError as exc:
-            raise HTTPException(status_code=404, detail=f"Import not found: {conversation_id}") from exc
+            raise HTTPException(
+                status_code=404, detail=f"Import not found: {conversation_id}"
+            ) from exc
 
     @app.post("/api/backup")
     def backup() -> dict[str, object]:
@@ -322,6 +349,8 @@ def create_app(default_root: Path | None = None) -> FastAPI:
     def open_folder_endpoint(request: OpenFolderRequest) -> dict[str, object]:
         try:
             path = Path(request.path).expanduser().resolve() if request.path else None
+            if path and not path.is_relative_to(root):
+                raise ValueError("Path must be within the archive root.")
             return {"path": str(open_folder(root, request.name, path))}
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -332,7 +361,9 @@ def create_app(default_root: Path | None = None) -> FastAPI:
         try:
             return {"path": str(restore_archive(root, source))}
         except FileNotFoundError as exc:
-            raise HTTPException(status_code=404, detail=f"Backup not found: {source}") from exc
+            raise HTTPException(
+                status_code=404, detail=f"Backup not found: {source}"
+            ) from exc
 
     @app.post("/api/graph/export")
     def graph_export() -> dict[str, object]:
