@@ -188,7 +188,7 @@ def build_chunks(
     embedder: Any,
     max_chars: int = 3500,
 ) -> list[dict[str, Any]]:
-    chunks = []
+    chunks: list[dict[str, Any]] = []
     buffer: list[str] = []
     for message in messages:
         rendered = f"{message['author']}: {message['content']}"

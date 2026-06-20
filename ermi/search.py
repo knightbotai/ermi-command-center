@@ -19,8 +19,7 @@ def search(
     lexical = lexical_scores(root, query)
     results: list[dict[str, object]] = []
     with Store(root / "ermi.sqlite3") as store:
-        rows = store.conn.execute(
-            """
+        rows = store.conn.execute("""
             SELECT chunks.id, chunks.conversation_id, chunks.title, chunks.text, chunks.embedding,
                    chunks.tags, conversations.markdown_path, conversations.project,
                    conversations.identity, conversations.import_status,
@@ -31,8 +30,7 @@ def search(
             FROM chunks
             JOIN conversations ON conversations.id = chunks.conversation_id
             LEFT JOIN chatlasso_metadata ON chatlasso_metadata.conversation_id = conversations.id
-            """
-        ).fetchall()
+            """).fetchall()
     for row in rows:
         if not row_matches_filters(row, filters):
             continue
@@ -60,7 +58,7 @@ def search(
                 "regression_contradictions_found": bool(row["regression_contradictions_found"]),
             }
         )
-    results.sort(key=lambda item: item["score"], reverse=True)
+    results.sort(key=lambda item: float(item["score"]), reverse=True)  # type: ignore
     return results[:limit]
 
 

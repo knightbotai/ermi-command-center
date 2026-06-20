@@ -57,9 +57,7 @@ def discover_markdown(source: Path) -> list[Path]:
         return [source] if source.suffix.lower() in {".md", ".markdown"} else []
     if source.is_dir():
         return sorted(
-            path
-            for path in source.rglob("*")
-            if path.is_file() and path.suffix.lower() in {".md", ".markdown"}
+            path for path in source.rglob("*") if path.is_file() and path.suffix.lower() in {".md", ".markdown"}
         )
     raise FileNotFoundError(source)
 
@@ -150,7 +148,9 @@ def normalize_ssi_metadata(metadata: dict[str, str], body: str, source: Path) ->
         or metadata.get("contradictions_found")
         or infer_regression_flag(body)
     )
-    normalized["regression_details"] = parse_list_value(metadata.get("regression_details", "")) or parse_regression_details(body)
+    normalized["regression_details"] = parse_list_value(
+        metadata.get("regression_details", "")
+    ) or parse_regression_details(body)
     normalized["source_path"] = str(source.resolve())
     normalized["source_hash"] = sha256(source)
     return normalized

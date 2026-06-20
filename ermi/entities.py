@@ -32,4 +32,3 @@ def extract_entities(text: str, *, limit: int = 30) -> list[tuple[str, str, floa
             kind = "tool"
         entities.append((name, kind, float(score)))
     return entities
-

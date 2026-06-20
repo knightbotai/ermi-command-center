@@ -5,7 +5,13 @@ from pathlib import Path
 
 from .chatlasso import import_chatlasso
 from .diagnostics import run_diagnostics
-from .exports import activity_summary, export_chat_csv, export_obsidian_second_brain, list_chat_titles, mine_code_blocks
+from .exports import (
+    activity_summary,
+    export_chat_csv,
+    export_obsidian_second_brain,
+    list_chat_titles,
+    mine_code_blocks,
+)
 from .flags import list_flags
 from .graph import export_graph
 from .ingest import ingest_export, init_archive
@@ -15,7 +21,7 @@ from .search import search
 from .setup import run_first_setup, save_setup
 from .storage import LATEST_SCHEMA_VERSION, Store
 from .timeline import concept_timeline
-from .watch import add_watcher, load_watchers, scan_chatlasso_watchers, watch_chatlasso
+from .watch import add_watcher, scan_chatlasso_watchers, watch_chatlasso
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -42,7 +48,9 @@ def main(argv: list[str] | None = None) -> int:
     csv_parser.add_argument("source", type=Path)
     csv_parser.add_argument("--target", type=Path)
 
-    code_parser = subparsers.add_parser("mine-chatgpt-code", help="Extract assistant code blocks from true-path ChatGPT messages.")
+    code_parser = subparsers.add_parser(
+        "mine-chatgpt-code", help="Extract assistant code blocks from true-path ChatGPT messages."
+    )
     code_parser.add_argument("source", type=Path)
     code_parser.add_argument("--target", type=Path)
 
@@ -50,7 +58,9 @@ def main(argv: list[str] | None = None) -> int:
     activity_parser.add_argument("source", type=Path)
     activity_parser.add_argument("--limit", type=int, default=5)
 
-    obsidian_parser = subparsers.add_parser("export-chatgpt-obsidian", help="Export categorized Obsidian-ready Markdown from ChatGPT.")
+    obsidian_parser = subparsers.add_parser(
+        "export-chatgpt-obsidian", help="Export categorized Obsidian-ready Markdown from ChatGPT."
+    )
     obsidian_parser.add_argument("source", type=Path)
     obsidian_parser.add_argument("--target", type=Path, default=Path("archive") / "exports" / "chatgpt_obsidian")
 
@@ -150,14 +160,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "watch-chatlasso":
         if args.source:
-            watchers = add_watcher(root, args.source.resolve())
+            added = add_watcher(root, args.source.resolve())
             print("Watching ChatLasso sources:")
-            for item in watchers:
-                print(f"  {item}")
+            for watch_item in added:
+                print(f"  {watch_item}")
         if args.once:
-            stats = scan_chatlasso_watchers(root)
+            scan_stats = scan_chatlasso_watchers(root)
             print("Watch scan complete")
-            for key, value in stats.items():
+            for key, value in scan_stats.items():
                 print(f"{key}: {value}")
             return 0
         print(f"Watching ChatLasso folders every {args.interval}s. Press Ctrl+C to stop.")
