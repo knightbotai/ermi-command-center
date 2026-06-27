@@ -181,6 +181,27 @@ def create_app(default_root: Path | None = None) -> FastAPI:
     @app.post("/api/ingest")
     def ingest(request: IngestRequest) -> dict[str, object]:
         source = Path(request.source).expanduser().resolve()
+
+        # Security: ensure source is within an allowed directory
+        from ermi.setup import load_setup
+
+        allowed_dirs = [root.resolve()]
+        setup_config = load_setup(root)
+        if setup_config.get("chatgpt_source"):
+            allowed_dirs.append(
+                Path(setup_config["chatgpt_source"]).expanduser().resolve().parent
+            )
+        if setup_config.get("chatlasso_source"):
+            allowed_dirs.append(
+                Path(setup_config["chatlasso_source"]).expanduser().resolve()
+            )
+
+        if not any(source.is_relative_to(d) for d in allowed_dirs):
+            raise HTTPException(
+                status_code=403,
+                detail="Source path is not within an allowed directory.",
+            )
+
         if not source.exists():
             raise HTTPException(status_code=404, detail=f"Source not found: {source}")
         try:
@@ -252,6 +273,26 @@ def create_app(default_root: Path | None = None) -> FastAPI:
     @app.post("/api/import/chatlasso")
     def import_chatlasso_endpoint(request: ImportRequest) -> dict[str, object]:
         source = Path(request.source).expanduser().resolve()
+
+        from ermi.setup import load_setup
+
+        allowed_dirs = [root.resolve()]
+        setup_config = load_setup(root)
+        if setup_config.get("chatgpt_source"):
+            allowed_dirs.append(
+                Path(setup_config["chatgpt_source"]).expanduser().resolve().parent
+            )
+        if setup_config.get("chatlasso_source"):
+            allowed_dirs.append(
+                Path(setup_config["chatlasso_source"]).expanduser().resolve()
+            )
+
+        if not any(source.is_relative_to(d) for d in allowed_dirs):
+            raise HTTPException(
+                status_code=403,
+                detail="Source path is not within an allowed directory.",
+            )
+
         if not source.exists():
             raise HTTPException(status_code=404, detail=f"Source not found: {source}")
         try:
@@ -280,6 +321,26 @@ def create_app(default_root: Path | None = None) -> FastAPI:
     @app.post("/api/watchers/chatlasso")
     def add_chatlasso_watcher(request: WatchRequest) -> dict[str, object]:
         source = Path(request.source).expanduser().resolve()
+
+        from ermi.setup import load_setup
+
+        allowed_dirs = [root.resolve()]
+        setup_config = load_setup(root)
+        if setup_config.get("chatgpt_source"):
+            allowed_dirs.append(
+                Path(setup_config["chatgpt_source"]).expanduser().resolve().parent
+            )
+        if setup_config.get("chatlasso_source"):
+            allowed_dirs.append(
+                Path(setup_config["chatlasso_source"]).expanduser().resolve()
+            )
+
+        if not any(source.is_relative_to(d) for d in allowed_dirs):
+            raise HTTPException(
+                status_code=403,
+                detail="Source path is not within an allowed directory.",
+            )
+
         try:
             return {"chatlasso": add_watcher(root, source)}
         except Exception as exc:

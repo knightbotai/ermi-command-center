@@ -22,3 +22,41 @@ def test_open_folder_rejects_paths_outside_root(tmp_path: Path) -> None:
     response = client.post("/api/open-folder", json={"path": str(invalid_path)})
     assert response.status_code == 400
     assert "Path must be within the archive root" in response.json()["detail"]
+
+
+def test_ingest_rejects_paths_outside_allowed_directories(tmp_path: Path) -> None:
+    root = tmp_path / "archive"
+    root.mkdir()
+
+    # Write a dummy setup.json to simulate an allowed source directory
+    setup_file = root / "setup.json"
+    allowed_source_dir = tmp_path / "allowed_source"
+    allowed_source_dir.mkdir()
+    setup_file.write_text(
+        json.dumps({"chatgpt_source": str(allowed_source_dir / "conversations.json")}),
+        encoding="utf-8",
+    )
+
+    app = create_app(root)
+    client = TestClient(app)
+
+    # Valid path inside root
+    valid_path_root = root / "some_export.json"
+    valid_path_root.touch()
+    response = client.post("/api/ingest", json={"source": str(valid_path_root)})
+    assert response.status_code != 403
+
+    # Valid path inside allowed chatgpt_source parent dir
+    valid_path_allowed = allowed_source_dir / "conversations.json"
+    valid_path_allowed.touch()
+    response = client.post("/api/ingest", json={"source": str(valid_path_allowed)})
+    assert response.status_code != 403
+
+    # Invalid path outside root and allowed directories
+    invalid_path = tmp_path / "outside_folder" / "secrets.txt"
+    invalid_path.parent.mkdir()
+    invalid_path.touch()
+
+    response = client.post("/api/ingest", json={"source": str(invalid_path)})
+    assert response.status_code == 403
+    assert "Source path is not within an allowed directory" in response.json()["detail"]
