@@ -70,6 +70,28 @@ class UpdateRequest(BaseModel):
     channel: str = "main"
 
 
+
+def validate_allowed_path(path: Path, root: Path) -> None:
+    from ermi.setup import load_setup
+
+    allowed_dirs = [root.resolve()]
+    setup_config = load_setup(root)
+    if setup_config.get("chatgpt_source"):
+        allowed_dirs.append(
+            Path(setup_config["chatgpt_source"]).expanduser().resolve().parent
+        )
+    if setup_config.get("chatlasso_source"):
+        allowed_dirs.append(
+            Path(setup_config["chatlasso_source"]).expanduser().resolve()
+        )
+
+    if not any(path.is_relative_to(d) for d in allowed_dirs):
+        raise HTTPException(
+            status_code=403,
+            detail="Source path is not within an allowed directory.",
+        )
+
+
 def create_app(default_root: Path | None = None) -> FastAPI:
     app = FastAPI(title="ERMI Command Center API")
     root = (default_root or Path("archive")).resolve()
@@ -183,24 +205,7 @@ def create_app(default_root: Path | None = None) -> FastAPI:
         source = Path(request.source).expanduser().resolve()
 
         # Security: ensure source is within an allowed directory
-        from ermi.setup import load_setup
-
-        allowed_dirs = [root.resolve()]
-        setup_config = load_setup(root)
-        if setup_config.get("chatgpt_source"):
-            allowed_dirs.append(
-                Path(setup_config["chatgpt_source"]).expanduser().resolve().parent
-            )
-        if setup_config.get("chatlasso_source"):
-            allowed_dirs.append(
-                Path(setup_config["chatlasso_source"]).expanduser().resolve()
-            )
-
-        if not any(source.is_relative_to(d) for d in allowed_dirs):
-            raise HTTPException(
-                status_code=403,
-                detail="Source path is not within an allowed directory.",
-            )
+        validate_allowed_path(source, root)
 
         if not source.exists():
             raise HTTPException(status_code=404, detail=f"Source not found: {source}")
@@ -217,6 +222,8 @@ def create_app(default_root: Path | None = None) -> FastAPI:
             if request.target
             else root / "exports" / "chat_history.csv"
         )
+        validate_allowed_path(source, root)
+        validate_allowed_path(target, root)
         try:
             return {"target": str(target), "stats": export_chat_csv(source, target)}
         except Exception as exc:
@@ -230,6 +237,8 @@ def create_app(default_root: Path | None = None) -> FastAPI:
             if request.target
             else root / "exports" / "all_extracted_code.txt"
         )
+        validate_allowed_path(source, root)
+        validate_allowed_path(target, root)
         try:
             return {"target": str(target), "stats": mine_code_blocks(source, target)}
         except Exception as exc:
@@ -243,6 +252,8 @@ def create_app(default_root: Path | None = None) -> FastAPI:
             if request.target
             else root / "exports" / "chatgpt_obsidian"
         )
+        validate_allowed_path(source, root)
+        validate_allowed_path(target, root)
         try:
             return {
                 "target": str(target),
@@ -253,8 +264,10 @@ def create_app(default_root: Path | None = None) -> FastAPI:
 
     @app.get("/api/export/chatgpt-titles")
     def export_chatgpt_titles(source: str) -> dict[str, object]:
+        source_path = Path(source).expanduser().resolve()
+        validate_allowed_path(source_path, root)
         try:
-            titles = list_chat_titles(Path(source).expanduser().resolve())
+            titles = list_chat_titles(source_path)
             return {"titles": titles, "count": len(titles)}
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -263,9 +276,11 @@ def create_app(default_root: Path | None = None) -> FastAPI:
     def export_chatgpt_activity(
         source: str, limit: Annotated[int, Query(ge=1, le=50)] = 5
     ) -> dict[str, object]:
+        source_path = Path(source).expanduser().resolve()
+        validate_allowed_path(source_path, root)
         try:
             return {
-                "activity": activity_summary(Path(source).expanduser().resolve(), limit)
+                "activity": activity_summary(source_path, limit)
             }
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -274,24 +289,7 @@ def create_app(default_root: Path | None = None) -> FastAPI:
     def import_chatlasso_endpoint(request: ImportRequest) -> dict[str, object]:
         source = Path(request.source).expanduser().resolve()
 
-        from ermi.setup import load_setup
-
-        allowed_dirs = [root.resolve()]
-        setup_config = load_setup(root)
-        if setup_config.get("chatgpt_source"):
-            allowed_dirs.append(
-                Path(setup_config["chatgpt_source"]).expanduser().resolve().parent
-            )
-        if setup_config.get("chatlasso_source"):
-            allowed_dirs.append(
-                Path(setup_config["chatlasso_source"]).expanduser().resolve()
-            )
-
-        if not any(source.is_relative_to(d) for d in allowed_dirs):
-            raise HTTPException(
-                status_code=403,
-                detail="Source path is not within an allowed directory.",
-            )
+        validate_allowed_path(source, root)
 
         if not source.exists():
             raise HTTPException(status_code=404, detail=f"Source not found: {source}")
@@ -322,24 +320,7 @@ def create_app(default_root: Path | None = None) -> FastAPI:
     def add_chatlasso_watcher(request: WatchRequest) -> dict[str, object]:
         source = Path(request.source).expanduser().resolve()
 
-        from ermi.setup import load_setup
-
-        allowed_dirs = [root.resolve()]
-        setup_config = load_setup(root)
-        if setup_config.get("chatgpt_source"):
-            allowed_dirs.append(
-                Path(setup_config["chatgpt_source"]).expanduser().resolve().parent
-            )
-        if setup_config.get("chatlasso_source"):
-            allowed_dirs.append(
-                Path(setup_config["chatlasso_source"]).expanduser().resolve()
-            )
-
-        if not any(source.is_relative_to(d) for d in allowed_dirs):
-            raise HTTPException(
-                status_code=403,
-                detail="Source path is not within an allowed directory.",
-            )
+        validate_allowed_path(source, root)
 
         try:
             return {"chatlasso": add_watcher(root, source)}
@@ -419,6 +400,7 @@ def create_app(default_root: Path | None = None) -> FastAPI:
     @app.post("/api/restore")
     def restore(request: RestoreRequest) -> dict[str, object]:
         source = Path(request.source).expanduser().resolve()
+        validate_allowed_path(source, root)
         try:
             return {"path": str(restore_archive(root, source))}
         except FileNotFoundError as exc:
