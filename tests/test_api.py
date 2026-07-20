@@ -60,3 +60,57 @@ def test_ingest_rejects_paths_outside_allowed_directories(tmp_path: Path) -> Non
     response = client.post("/api/ingest", json={"source": str(invalid_path)})
     assert response.status_code == 403
     assert "Source path is not within an allowed directory" in response.json()["detail"]
+
+
+def test_export_rejects_paths_outside_allowed_directories(tmp_path: Path) -> None:
+    root = tmp_path / "archive"
+    root.mkdir()
+    app = create_app(root)
+    client = TestClient(app)
+
+    invalid_source = tmp_path / "outside_source.json"
+    invalid_source.touch()
+
+    response = client.post(
+        "/api/export/chatgpt-csv", json={"source": str(invalid_source)}
+    )
+    assert response.status_code == 403
+
+
+def test_export_rejects_target_outside_root(tmp_path: Path) -> None:
+    root = tmp_path / "archive"
+    root.mkdir()
+
+    # Write dummy setup.json
+    setup_file = root / "setup.json"
+    allowed_source_dir = tmp_path / "allowed_source"
+    allowed_source_dir.mkdir()
+    setup_file.write_text(
+        '{"chatgpt_source": "' + str(allowed_source_dir / "conversations.json") + '"}'
+    )
+
+    app = create_app(root)
+    client = TestClient(app)
+
+    valid_source = allowed_source_dir / "conversations.json"
+    valid_source.touch()
+    invalid_target = tmp_path / "outside_target.csv"
+
+    response = client.post(
+        "/api/export/chatgpt-csv",
+        json={"source": str(valid_source), "target": str(invalid_target)},
+    )
+    assert response.status_code == 403
+
+
+def test_restore_rejects_paths_outside_allowed_directories(tmp_path: Path) -> None:
+    root = tmp_path / "archive"
+    root.mkdir()
+    app = create_app(root)
+    client = TestClient(app)
+
+    invalid_source = tmp_path / "outside_source"
+    invalid_source.mkdir(exist_ok=True)
+
+    response = client.post("/api/restore", json={"source": str(invalid_source)})
+    assert response.status_code == 403
