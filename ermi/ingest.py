@@ -190,12 +190,16 @@ def build_chunks(
 ) -> list[dict[str, Any]]:
     chunks: list[dict[str, Any]] = []
     buffer: list[str] = []
+    buffer_len: int = 0
     for message in messages:
         rendered = f"{message['author']}: {message['content']}"
-        if buffer and sum(len(item) for item in buffer) + len(rendered) > max_chars:
+        rendered_len = len(rendered)
+        if buffer and buffer_len + rendered_len > max_chars:
             chunks.append(make_chunk(conversation_id, title, len(chunks), buffer, tags, embedder))
             buffer = []
+            buffer_len = 0
         buffer.append(rendered)
+        buffer_len += rendered_len
     if buffer:
         chunks.append(make_chunk(conversation_id, title, len(chunks), buffer, tags, embedder))
     return chunks
