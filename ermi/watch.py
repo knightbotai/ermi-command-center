@@ -30,11 +30,15 @@ def load_watchers(root: Path) -> list[str]:
 def save_watchers(root: Path, watchers: list[str]) -> None:
     init_archive(root)
     unique = []
+    seen = set()
     for item in watchers:
         resolved = str(Path(item).expanduser().resolve())
-        if resolved not in unique:
+        if resolved not in seen:
+            seen.add(resolved)
             unique.append(resolved)
-    config_path(root).write_text(json.dumps({"chatlasso": unique}, indent=2), encoding="utf-8")
+    config_path(root).write_text(
+        json.dumps({"chatlasso": unique}, indent=2), encoding="utf-8"
+    )
 
 
 def add_watcher(root: Path, source: Path) -> list[str]:
@@ -56,14 +60,23 @@ def load_state(root: Path) -> dict[str, str]:
 
 def save_state(root: Path, state: dict[str, str]) -> None:
     init_archive(root)
-    state_path(root).write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
+    state_path(root).write_text(
+        json.dumps(state, indent=2, sort_keys=True), encoding="utf-8"
+    )
 
 
 def scan_chatlasso_watchers(root: Path) -> dict[str, int]:
     init_archive(root)
     watchers = load_watchers(root)
     state = load_state(root)
-    totals = {"watchers": len(watchers), "seen": 0, "changed": 0, "imported": 0, "chunks": 0, "entities": 0}
+    totals = {
+        "watchers": len(watchers),
+        "seen": 0,
+        "changed": 0,
+        "imported": 0,
+        "chunks": 0,
+        "entities": 0,
+    }
 
     for watched in watchers:
         source = Path(watched)
@@ -86,7 +99,9 @@ def scan_chatlasso_watchers(root: Path) -> dict[str, int]:
     return totals
 
 
-def watch_chatlasso(root: Path, interval: int = 15, stop_event: Event | None = None) -> None:
+def watch_chatlasso(
+    root: Path, interval: int = 15, stop_event: Event | None = None
+) -> None:
     stop_event = stop_event or Event()
     while not stop_event.is_set():
         scan_chatlasso_watchers(root)
