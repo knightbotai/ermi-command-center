@@ -263,25 +263,45 @@ class Store:
         if conversation.get("source_kind") == "chatlasso":
             self.replace_chatlasso_metadata(cid, metadata)
         self.replace_import_review(cid, import_status, review_reason(metadata))
-        for entity in conversation.get("entities", []):
-            self.conn.execute(
-                """
-                INSERT INTO entities(name, kind, score) VALUES (?, ?, ?)
-                ON CONFLICT(name, kind) DO UPDATE SET score = max(score, excluded.score)
-                """,
-                (entity["name"], entity["kind"], entity["score"]),
-            )
-            entity_id = self.conn.execute(
-                "SELECT id FROM entities WHERE name = ? AND kind = ?",
-                (entity["name"], entity["kind"]),
-            ).fetchone()["id"]
-            self.conn.execute(
-                """
-                INSERT OR REPLACE INTO entity_refs(entity_id, conversation_id, chunk_id, count)
-                VALUES (?, ?, ?, ?)
-                """,
-                (entity_id, cid, None, int(entity["score"])),
-            )
+
+        entities = conversation.get("entities", [])
+        if entities:
+            # We chunk the entities to avoid exceeding SQLite's parameter limits (usually 32766 or 999).
+            # A chunk size of 500 gives 1500 parameters which is safe for all SQLite versions.
+            CHUNK_SIZE = 500
+
+            for i in range(0, len(entities), CHUNK_SIZE):
+                chunk = entities[i : i + CHUNK_SIZE]
+
+                # Bulk UPSERT entities
+                values_placeholders = ",".join(["(?, ?, ?)"] * len(chunk))
+                params = []
+                for entity in chunk:
+                    params.extend([entity["name"], entity["kind"], entity["score"]])
+
+                # We use RETURNING to get the resulting IDs efficiently.
+                # In SQLite >= 3.35.0, RETURNING is supported for UPSERT.
+                rows = self.conn.execute(
+                    f"""
+                    INSERT INTO entities(name, kind, score) VALUES {values_placeholders}
+                    ON CONFLICT(name, kind) DO UPDATE SET score = max(score, excluded.score)
+                    RETURNING id
+                    """,
+                    params,
+                ).fetchall()
+
+                # Bulk REPLACE entity_refs
+                ref_params = []
+                for row, entity in zip(rows, chunk):
+                    ref_params.append((row["id"], cid, None, int(entity["score"])))
+
+                self.conn.executemany(
+                    """
+                    INSERT OR REPLACE INTO entity_refs(entity_id, conversation_id, chunk_id, count)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    ref_params,
+                )
         self.conn.commit()
 
     def replace_chatlasso_metadata(self, conversation_id: str, metadata: dict[str, Any]) -> None:
